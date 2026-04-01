@@ -57,20 +57,16 @@ export function Upload() {
           <h2 className="text-4xl mb-4 text-[#2c2c2c]">
             사진 업로드 & AI 처리
           </h2>
-          <p className="text-lg text-[#5c5c5c]">
-            소중한 순간을 담은 사진들을 업로드하면 자동으로 고화질 변환이
-            시작됩니다.
-          </p>
+          <div className="mb-6 rounded-2xl border border-[#d8dfd8] bg-white px-5 py-4">
+            <p className="text-sm text-[#5c5c5c] leading-6">
+              사진을 여러 장 업로드한 뒤, 각 사진의 고화질 변환이 끝나면 장면
+              키워드를 입력할 수 있어요. 모든 사진의 키워드 입력이 완료되어야
+              다음 단계로 넘어갈 수 있습니다.
+            </p>
+          </div>
         </div>
 
         <StepHeader currentStep={1} />
-        <div className="mb-6 rounded-2xl border border-[#d8dfd8] bg-white px-5 py-4">
-          <p className="text-sm text-[#5c5c5c] leading-6">
-            사진을 여러 장 업로드한 뒤, 각 사진의 고화질 변환이 끝나면 장면
-            키워드를 입력할 수 있어요. 모든 사진의 키워드 입력이 완료되어야 다음
-            단계로 넘어갈 수 있습니다.
-          </p>
-        </div>
         <div className="grid lg:grid-cols-2 gap-8">
           <div className="space-y-6">
             <div>
