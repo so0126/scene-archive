@@ -68,18 +68,15 @@ export function Order() {
       </header>
 
       <div className="max-w-4xl mx-auto px-4 py-12">
-        <StepHeader currentStep={3} />
         <div className="mb-12">
+           <h2 className="text-4xl mb-4 text-[#2c2c2c]">주문 및 배송 정보</h2>
           <div className="mb-8 rounded-2xl border border-[#d8dfd8] bg-white px-5 py-4">
             <p className="text-sm text-[#5c5c5c] leading-6">
               입력하신 배송 정보로 포토북 주문이 진행됩니다. 주문 전 우편번호와
               주소를 한 번 더 확인해주세요.
             </p>
           </div>
-          <h2 className="text-4xl mb-4 text-[#2c2c2c]">주문 및 배송 정보</h2>
-          <p className="text-lg text-[#5c5c5c]">
-            프리미엄 포토북을 받으실 배송 정보를 입력해주세요.
-          </p>
+        <StepHeader currentStep={3} />
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">

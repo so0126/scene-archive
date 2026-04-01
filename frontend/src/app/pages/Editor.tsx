@@ -79,9 +79,13 @@ export function Editor() {
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="mb-12">
           <h2 className="text-4xl mb-4 text-[#2c2c2c]">AI 에디팅</h2>
-          <p className="text-lg text-[#5c5c5c]">
-            AI가 생성한 에세이를 각 페이지별로 확인하고 수정하세요.
-          </p>
+          <div className="mb-6 rounded-2xl border border-[#d8dfd8] bg-white px-5 py-4">
+            <p className="text-sm text-[#5c5c5c] leading-6">
+              AI가 입력하신 텍스트를 기반으로 포토북에 들어갈 내용을 생성합니다.
+              수정하고 싶으시다면 수정하기 버튼을 눌러주세요.
+              수정이 완료되었다면 수정완료 버튼을 눌러주세요.
+            </p>
+          </div>
         </div>
         <StepHeader currentStep={2} />
 
