@@ -1,3 +1,6 @@
+import { StepHeader } from "../components/common/StepHeader";
+import { SectionCard } from "../components/common/SectionCard";
+import { StatusBadge } from "../components/common/StatusBadge";
 import { useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -51,12 +54,23 @@ export function Upload() {
 
       <div className="max-w-6xl mx-auto px-4 py-12">
         <div className="mb-12">
-          <h2 className="text-4xl mb-4 text-[#2c2c2c]">사진 업로드 & AI 처리</h2>
+          <h2 className="text-4xl mb-4 text-[#2c2c2c]">
+            사진 업로드 & AI 처리
+          </h2>
           <p className="text-lg text-[#5c5c5c]">
-            소중한 순간을 담은 사진들을 업로드하면 자동으로 고화질 변환이 시작됩니다.
+            소중한 순간을 담은 사진들을 업로드하면 자동으로 고화질 변환이
+            시작됩니다.
           </p>
         </div>
 
+        <StepHeader currentStep={1} />
+        <div className="mb-6 rounded-2xl border border-[#d8dfd8] bg-white px-5 py-4">
+          <p className="text-sm text-[#5c5c5c] leading-6">
+            사진을 여러 장 업로드한 뒤, 각 사진의 고화질 변환이 끝나면 장면
+            키워드를 입력할 수 있어요. 모든 사진의 키워드 입력이 완료되어야 다음
+            단계로 넘어갈 수 있습니다.
+          </p>
+        </div>
         <div className="grid lg:grid-cols-2 gap-8">
           <div className="space-y-6">
             <div>
@@ -66,10 +80,14 @@ export function Upload() {
               <div className="border-2 border-dashed border-[#8b9a8e] rounded-lg p-12 text-center bg-white hover:bg-[#f9f9f9] transition-colors">
                 <label className="cursor-pointer block">
                   <UploadIcon className="w-16 h-16 mx-auto mb-4 text-[#8b9a8e]" />
-                  <p className="text-lg mb-2 text-[#2c2c2c]">클릭하여 사진 업로드</p>
-                  <p className="text-sm text-[#5c5c5c]">여러 장 선택 가능 (JPG, PNG)</p>
+                  <p className="text-xl mb-2 text-[#2c2c2c] font-medium">
+                    좋아하는 장면을 업로드하세요
+                  </p>
+                  <p className="text-sm text-[#5c5c5c]">
+                    여러 장 선택 가능 · JPG, PNG 지원
+                  </p>
                   <p className="text-xs text-[#8b9a8e] mt-2">
-                    업로드 즉시 AI 고화질 변환이 시작됩니다
+                    업로드 후 자동으로 AI 고화질 변환이 시작됩니다
                   </p>
                   <input
                     type="file"
@@ -83,7 +101,7 @@ export function Upload() {
             </div>
 
             {photos.length > 0 && currentPhoto && (
-              <div className="bg-white rounded-lg p-6 shadow-lg">
+              <SectionCard>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl text-[#2c2c2c]">
                     사진 {currentIndex + 1} / {photos.length}
@@ -113,15 +131,24 @@ export function Upload() {
                       </div>
                     </div>
                   )}
-                  {currentPhoto.processed && (
-                    <div className="absolute top-2 left-2 bg-[#8b9a8e] text-white px-3 py-1 rounded text-sm">
-                      ✓ 고화질 변환 완료
+                  {currentPhoto.processed && !currentPhoto.keywords && (
+                    <div className="absolute top-2 left-2">
+                      <StatusBadge status="ready" />
+                    </div>
+                  )}
+
+                  {currentPhoto.processed && currentPhoto.keywords && (
+                    <div className="absolute top-2 left-2">
+                      <StatusBadge status="completed" />
                     </div>
                   )}
                 </div>
 
                 <div className="mb-4">
-                  <Label htmlFor="keywords" className="text-base mb-2 block text-[#2c2c2c]">
+                  <Label
+                    htmlFor="keywords"
+                    className="text-base mb-2 block text-[#2c2c2c]"
+                  >
                     장면 키워드
                   </Label>
                   {currentPhoto.processing ? (
@@ -140,14 +167,18 @@ export function Upload() {
                 </div>
 
                 {currentPhoto.processed && currentPhoto.keywords && (
-                  <div className="p-4 bg-[#f0f7f4] rounded-lg text-center">
-                    <p className="text-[#8b9a8e]">✓ 이 사진 준비 완료</p>
+                  <div className="p-4 bg-[#f0f7f4] rounded-xl">
+                    <p className="text-sm text-[#5b6b5f]">
+                      이 사진은 에세이 생성 준비가 끝났어요.
+                    </p>
                   </div>
                 )}
 
                 <div className="flex gap-2 mt-4">
                   <Button
-                    onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
+                    onClick={() =>
+                      setCurrentIndex((prev) => Math.max(0, prev - 1))
+                    }
                     disabled={currentIndex === 0}
                     variant="outline"
                     className="flex-1 border-[#8b9a8e] text-[#8b9a8e] hover:bg-[#8b9a8e] hover:text-white disabled:opacity-30"
@@ -157,7 +188,9 @@ export function Upload() {
                   </Button>
                   <Button
                     onClick={() =>
-                      setCurrentIndex((prev) => Math.min(photos.length - 1, prev + 1))
+                      setCurrentIndex((prev) =>
+                        Math.min(photos.length - 1, prev + 1),
+                      )
                     }
                     disabled={currentIndex === photos.length - 1}
                     variant="outline"
@@ -167,11 +200,11 @@ export function Upload() {
                     <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>
-              </div>
+              </SectionCard>
             )}
           </div>
 
-          <div className="bg-white rounded-lg p-8 shadow-lg">
+          <SectionCard className="p-8">
             <h3 className="text-2xl mb-6 text-[#2c2c2c]">처리 현황</h3>
 
             {photos.length === 0 ? (
@@ -211,13 +244,28 @@ export function Upload() {
                           )}
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm text-[#2c2c2c] mb-1">사진 {index + 1}</p>
+                          <p className="text-sm text-[#2c2c2c] mb-1">
+                            사진 {index + 1}
+                          </p>
                           {photo.processing ? (
                             <p className="text-xs text-[#8b9a8e]">변환 중...</p>
                           ) : photo.keywords ? (
-                            <p className="text-xs text-[#5c5c5c] truncate">{photo.keywords}</p>
+                            <p className="text-xs text-[#5c5c5c] truncate">
+                              {photo.keywords}
+                            </p>
                           ) : (
-                            <p className="text-xs text-[#999] italic">키워드 미입력</p>
+                            <p className="text-xs text-[#999] italic">
+                              키워드 미입력
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex-shrink-0">
+                          {photo.processing ? (
+                            <StatusBadge status="processing" />
+                          ) : photo.keywords ? (
+                            <StatusBadge status="completed" />
+                          ) : (
+                            <StatusBadge status="ready" />
                           )}
                         </div>
                       </div>
@@ -230,7 +278,8 @@ export function Upload() {
                     <div className="flex justify-between text-sm mb-2">
                       <span className="text-[#5c5c5c]">진행 상황</span>
                       <span className="text-[#2c2c2c]">
-                        {photos.filter((p) => p.processed && p.keywords).length} / {photos.length} 완료
+                        {photos.filter((p) => p.processed && p.keywords).length}{" "}
+                        / {photos.length} 완료
                       </span>
                     </div>
                     <div className="w-full bg-[#e5e5e5] rounded-full h-3">
@@ -250,10 +299,17 @@ export function Upload() {
                   >
                     다음 단계로 →
                   </Button>
+                  {photos.length > 0 && !canProceed && (
+                    <p className="mt-3 text-sm text-center text-[#5c5c5c]">
+                      {photos.some((p) => p.processing)
+                        ? "모든 사진의 고화질 변환이 끝나야 다음 단계로 이동할 수 있어요."
+                        : "모든 사진에 장면 키워드를 입력해야 다음 단계로 이동할 수 있어요."}
+                    </p>
+                  )}
                 </div>
               </div>
             )}
-          </div>
+          </SectionCard>
         </div>
       </div>
     </div>

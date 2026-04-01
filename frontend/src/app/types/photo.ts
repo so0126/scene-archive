@@ -4,4 +4,5 @@ export interface PhotoData {
   keywords: string;
   processing: boolean;
   processed: boolean;
+  aiText?: string;
 }

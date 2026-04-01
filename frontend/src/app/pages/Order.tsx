@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { StepHeader } from "../components/common/StepHeader";
+import { SectionCard } from "../components/common/SectionCard";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -66,7 +68,14 @@ export function Order() {
       </header>
 
       <div className="max-w-4xl mx-auto px-4 py-12">
+        <StepHeader currentStep={3} />
         <div className="mb-12">
+          <div className="mb-8 rounded-2xl border border-[#d8dfd8] bg-white px-5 py-4">
+            <p className="text-sm text-[#5c5c5c] leading-6">
+              입력하신 배송 정보로 포토북 주문이 진행됩니다. 주문 전 우편번호와
+              주소를 한 번 더 확인해주세요.
+            </p>
+          </div>
           <h2 className="text-4xl mb-4 text-[#2c2c2c]">주문 및 배송 정보</h2>
           <p className="text-lg text-[#5c5c5c]">
             프리미엄 포토북을 받으실 배송 정보를 입력해주세요.
@@ -76,11 +85,22 @@ export function Order() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Order Form */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg p-8 shadow-lg">
+            <SectionCard className="p-8">
               <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="pb-2 border-b border-[#ece9e2]">
+                  <h3 className="text-lg font-semibold text-[#2c2c2c]">
+                    수령인 정보
+                  </h3>
+                  <p className="text-sm text-[#777] mt-1">
+                    주문자와 연락 가능한 정보를 입력해주세요.
+                  </p>
+                </div>
                 {/* Name */}
                 <div>
-                  <Label htmlFor="name" className="text-base mb-2 block text-[#2c2c2c]">
+                  <Label
+                    htmlFor="name"
+                    className="text-base mb-2 block text-[#2c2c2c]"
+                  >
                     수령인 이름 <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -96,7 +116,10 @@ export function Order() {
 
                 {/* Phone */}
                 <div>
-                  <Label htmlFor="phone" className="text-base mb-2 block text-[#2c2c2c]">
+                  <Label
+                    htmlFor="phone"
+                    className="text-base mb-2 block text-[#2c2c2c]"
+                  >
                     연락처 <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -111,6 +134,14 @@ export function Order() {
                 </div>
 
                 {/* Postal Code */}
+                <div className="pt-2 pb-2 border-b border-[#ece9e2]">
+                  <h3 className="text-lg font-semibold text-[#2c2c2c]">
+                    배송지 정보
+                  </h3>
+                  <p className="text-sm text-[#777] mt-1">
+                    포토북을 받으실 주소를 입력해주세요.
+                  </p>
+                </div>
                 <div>
                   <Label
                     htmlFor="postalCode"
@@ -125,13 +156,13 @@ export function Order() {
                       placeholder="12345"
                       value={formData.postalCode}
                       onChange={handleInputChange}
-                      className="text-base p-6 bg-white border-[#8b9a8e]"
+                      className="text-base p-6 bg-white border-[#8b9a8e] rounded-xl"
                       required
                     />
                     <Button
                       type="button"
                       variant="outline"
-                      className="px-8 border-[#8b9a8e] text-[#8b9a8e] hover:bg-[#8b9a8e] hover:text-white whitespace-nowrap"
+                      className="px-6 rounded-xl border-[#8b9a8e] text-[#8b9a8e] hover:bg-[#8b9a8e] hover:text-white whitespace-nowrap"
                     >
                       우편번호 찾기
                     </Button>
@@ -179,25 +210,29 @@ export function Order() {
                   type="submit"
                   className="w-full bg-[#8b9a8e] hover:bg-[#6d7d70] text-white py-6 text-lg mt-8"
                 >
-                  주문 완료하기
+                  포토북 주문하기
                 </Button>
               </form>
-            </div>
+            </SectionCard>
           </div>
 
           {/* Order Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg p-6 shadow-lg sticky top-8">
+            <SectionCard className="p-6 sticky top-8">
               <h3 className="text-xl mb-6 text-[#2c2c2c]">주문 요약</h3>
-
+              <p className="text-sm text-[#777] mb-5">
+                지금까지 만든 페이지와 제작 사양을 확인하세요.
+              </p>
               <div className="space-y-4 mb-6">
-                <div className="flex items-center gap-3 p-3 bg-[#f9f9f9] rounded">
+                <div className="flex items-center gap-3 p-4 bg-[#f9f9f9] rounded-xl">
                   <Package className="w-8 h-8 text-[#8b9a8e]" />
                   <div>
                     <p className="text-sm text-[#2c2c2c]">
                       Scene Archive 포토북
                     </p>
-                    <p className="text-xs text-[#5c5c5c]">A4 하드커버 · {pageCount}페이지</p>
+                    <p className="text-xs text-[#5c5c5c]">
+                      A4 하드커버 · 총 {pageCount}페이지
+                    </p>
                   </div>
                 </div>
               </div>
@@ -217,15 +252,15 @@ export function Order() {
                 </div>
               </div>
 
-              <div className="mt-6 p-4 bg-[#f0f7f4] rounded-lg">
+              <div className="mt-6 p-4 bg-[#f0f7f4] rounded-xl">
                 <p className="text-xs text-[#5c5c5c] leading-relaxed">
-                  • 제작 기간: 영업일 기 5-7일
+                  • 제작 기간: 영업일 기준 5-7일
                   <br />
                   • 배송 기간: 2-3일
                   <br />• 총 소요 기간: 약 7-10일
                 </p>
               </div>
-            </div>
+            </SectionCard>
           </div>
         </div>
       </div>
