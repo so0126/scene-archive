@@ -204,7 +204,7 @@ export function Editor() {
                   onClick={() => setIsEditing(!isEditing)}
                   className="border-[#8b9a8e] text-[#8b9a8e] hover:bg-[#8b9a8e] hover:text-white"
                 >
-                  {isEditing ? "���정 완료" : "수정하기"}
+                  {isEditing ? "수정 완료" : "수정하기"}
                 </Button>
               </div>
 
@@ -263,7 +263,7 @@ export function Editor() {
                   onClick={handleSaveAndContinue}
                   className="w-full bg-[#8b9a8e] hover:bg-[#6d7d70] text-white py-6 text-lg"
                 >
-                  주문하기 ���
+                  주문하기
                 </Button>
               </div>
             </div>

@@ -31,7 +31,7 @@ export function Success() {
           </p>
 
           <div className="bg-[#f9f9f9] rounded-lg p-8 mb-8 text-left">
-            <h3 className="text-xl mb-6 text-[#2c2c2c]">주문 정���</h3>
+            <h3 className="text-xl mb-6 text-[#2c2c2c]">주문 정보</h3>
 
             <div className="space-y-4">
               <div className="flex items-start gap-3">
