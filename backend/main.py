@@ -5,8 +5,10 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 from bookprintapi.exceptions import ApiError
 import os
+from database import init_db, get_demo_scenes
 
 load_dotenv()
+init_db()
 
 from bookprintapi import Client
 app = FastAPI()
@@ -44,9 +46,16 @@ class FinalizeAllRequest(BaseModel):
     book_uid: str
     scenes: List[SceneItem]
 
+
+
 @app.get("/")
 def root():
     return {"message": "API Key 로드 성공!"}
+
+@app.get("/api/scene/demo")
+def fetch_demo_scenes():
+    # DB에 저장된 24개의 명대사 데이터를 리턴
+    return get_demo_scenes()
 
 # 1. 책 프로젝트 생성 API
 @app.post("/api/book/init")
@@ -140,7 +149,7 @@ def save_scenes(data: FinalizeAllRequest):
         print(f"에러메시지: {e.message}")
 
         if hasattr(e, 'details') and e.details:
-            print(f"상세내용: {e.details}") 
+            print(f"상세내용: {e.details}")
 
         raise HTTPException(status_code=400, detail=str(e))
 

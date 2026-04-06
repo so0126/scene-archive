@@ -9,7 +9,10 @@ interface ServerUploadResponse {
 
 export function usePhotoFlow() {
   const { bookUid } = useBookStore();
-  const [photos, setPhotos] = useState<PhotoData[]>([]); // 타입은 상황에 맞춰 수정
+  const [photos, setPhotos] = useState<PhotoData[]>(() => {
+    const saved = sessionStorage.getItem("photos");
+    return saved ? JSON.parse(saved) : [];
+  });
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,6 +97,6 @@ export function usePhotoFlow() {
     handleImageUpload,
     handleKeywordChange,
     handleDeletePhoto,
-    canProceed: photos.length > 0 && photos.every((p) => p.processed && p.keywords.trim() !== ""),
+    canProceed: photos.length > 0 && photos.every((p) => p.processed && (p.keywords?.trim() ?? "") !== ""),
   };
 }
