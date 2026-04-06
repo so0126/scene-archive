@@ -17,7 +17,9 @@ export const useBookStore = create<BookState>((set) => ({
   },
 
   initBook: async () => {
-    set({ isCreating: true });
+    sessionStorage.removeItem('current_book_uid'); // 책 ID 삭제
+    sessionStorage.removeItem('photos');           // 👈 저장된 사진 데이터도 삭제!
+    set({ bookUid: null, isCreating: true });      // 상태 초기화
     try {
       const response = await fetch('http://localhost:8000/api/book/init', { method: 'POST' });
       const data = await response.json();
