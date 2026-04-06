@@ -54,8 +54,32 @@ def root():
 
 @app.get("/api/scene/demo")
 def fetch_demo_scenes():
-    # DB에 저장된 24개의 명대사 데이터를 리턴
-    return get_demo_scenes()
+    # 1. SQLite에서 데이터 가져오기 (id, image, keywords)
+    raw_data = get_demo_scenes()
+
+    # 2. 책 UID 생성 (조립을 위해 필수)
+    res = client.books.create(book_spec_uid="SQUAREBOOK_HC", title="Demo", creation_type="TEST")
+    book_uid = res["data"]["bookUid"]
+
+    # 3. ⭐️ SDK로 진짜 serverFileName 딱 하나만 뽑기
+    # backend/static/samples/demo.jpg 파일이 있어야 합니다!
+    sample_path = "static/samples/demo_sample.jpg"
+    upload_res = client.photos.upload(book_uid, sample_path)
+    real_server_name = upload_res["data"]["fileName"]
+
+    # 4. 프론트로 보낼 때 serverFileName을 포함해서 쏴줍니다.
+    return {
+        "book_uid": book_uid,
+        "scenes": [
+            {
+                "id": item["id"],
+                "image": item["image"],
+                "keywords": item["keywords"],
+                "serverFileName": real_server_name,  # 👈 이게 있어야 조립이 됨!
+                "processed": True
+            } for item in raw_data
+        ]
+    }
 
 # 1. 책 프로젝트 생성 API
 @app.post("/api/book/init")
