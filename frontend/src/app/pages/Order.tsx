@@ -6,10 +6,11 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Package } from "lucide-react";
-
+import { useBookStore } from "../store/useBookStore";
 
 export function Order() {
   const navigate = useNavigate();
+  const { bookUid } = useBookStore();
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -31,25 +32,54 @@ export function Order() {
     setFormData((prev) => ({ ...prev, [id]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate form
-    if (
-      !formData.name ||
-      !formData.phone ||
-      !formData.postalCode ||
-      !formData.address
-    ) {
+    // 1. 필수 입력값 검증
+    if (!formData.name || !formData.phone || !formData.postalCode || !formData.address) {
       alert("모든 필수 항목을 입력해주세요.");
       return;
     }
 
-    // Store order data
-    sessionStorage.setItem("orderData", JSON.stringify(formData));
+    if (!bookUid) {
+      alert("책 정보가 없습니다. 홈에서 다시 시작해주세요.");
+      return;
+    }
 
-    // Navigate to success page
-    navigate("/success");
+    try {
+      // 2. 백엔드 API 호출
+      const response = await fetch("http://localhost:8000/api/order/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          book_uid: bookUid,            // 👈 백엔드 OrderRequest 규격에 맞춤
+          name: formData.name,
+          phone: formData.phone,
+          postal_code: formData.postalCode,
+          address: formData.address,
+          detail_address: formData.detailAddress,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("✅ 주문 성공! 주문번호:", result.order_uid);
+        
+        // 3. 성공 시 데이터 저장 및 페이지 이동
+        sessionStorage.setItem("orderData", JSON.stringify(formData));
+        sessionStorage.setItem("orderUid", result.order_uid);
+        navigate("/success");
+      } else {
+        const errorData = await response.json();
+        // ❌ 에러 발생 시 (예: 최소 페이지 미달 등)
+        alert(`주문 실패: ${errorData.detail}`);
+      }
+    } catch (error) {
+      console.error("통신 에러:", error);
+      alert("서버와 통신 중 문제가 발생했습니다.");
+    }
   };
 
   return (

@@ -115,6 +115,16 @@ def save_scenes(data: FinalizeAllRequest):
                     "dayNum": "25"
                 }
             )
+
+        current_count = len(data.scenes)
+        if current_count < 24:
+            last_scene = data.scenes[-1]
+            for _ in range(24 - current_count):
+                client.contents.insert(
+                    data.book_uid,
+                    template_uid="46VqZhVNOfAp",
+                    parameters={"photo": last_scene.serverFileName, "diaryText": "...", "monthNum": "04",
+                    "dayNum": "25"})
         print(f"✅ 내지 {len(data.scenes)}장 삽입 성공")
 
         return {"status": "success"}
@@ -122,7 +132,6 @@ def save_scenes(data: FinalizeAllRequest):
 
     except ApiError as e:
 
-        # ⭐ 여기가 핵심입니다! 스위트북 서버가 보낸 진짜 이유를 출력합니다.
 
         print("❌ 스위트북 API 에러 발생!")
 
@@ -131,7 +140,7 @@ def save_scenes(data: FinalizeAllRequest):
         print(f"에러메시지: {e.message}")
 
         if hasattr(e, 'details') and e.details:
-            print(f"상세내용: {e.details}")  # 👈 여기에 "dateRange가 너무 깁니다" 같은 게 써있을 거예요.
+            print(f"상세내용: {e.details}") 
 
         raise HTTPException(status_code=400, detail=str(e))
 
