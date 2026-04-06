@@ -3,11 +3,12 @@ import { Button } from "../components/ui/button";
 import { Sparkles, Upload, Wand2, Package, Loader2 , PlayCircle} from "lucide-react";
 import { useBookStore } from "../store/useBookStore";
 import { useState } from "react";
+import type { PhotoData } from "../types/photo"
 interface DemoScene {
   id: string;
   image: string;
   keywords: string; 
-  erverFileName: string;
+  serverFileName: string;
   processed: boolean;
 }
 
@@ -23,34 +24,27 @@ export function Home() {
 
   const handleDemoStart = async () => {
   try {
-    // 1. 책 생성
-    const initRes = await fetch("http://localhost:8000/api/book/init", { method: "POST" });
-    const { book_uid } = await initRes.json();
+    const response = await fetch("http://localhost:8000/api/scene/demo");
+    const data = await response.json(); // { book_uid, scenes }
 
-    // 2. SQLite 데이터 가져오기
-    const demoRes = await fetch("http://localhost:8000/api/scene/demo");
-    const demoScenes: DemoScene[] = await demoRes.json();
-
-    // 3. 24장 사진 데이터 만들기 (이미 업로드 된 것처럼!)
-    const preparedPhotos = demoScenes.map((s) => ({
+    // 💡 백엔드에서 준 데이터를 그대로 PhotoData 형식으로 매핑
+    const preparedPhotos: PhotoData[] = data.scenes.map((s: DemoScene) => ({
       id: s.id,
       image: s.image,
-      keywords: s.keywords || "", // 👈 키워드 자동 주입
-      serverFileName: "image_b681e7.png", // 데모용 기본 파일명
+      keywords: s.keywords || "",
+      serverFileName: s.serverFileName, // 👈 여기서 "image_b681e7.png" 같은 가짜 말고 진짜를 넣음
       processed: true,
       processing: false,
     }));
 
-    // 4. 주문 정보 하드코딩 급으로 미리 넣기
-    const demoOrder = {
+    setBookUid(data.book_uid);
+    sessionStorage.setItem("photos", JSON.stringify(preparedPhotos));
+    
+    // 주문 데이터도 미리 세팅
+    sessionStorage.setItem("orderData", JSON.stringify({
       name: "박소영", phone: "010-1234-5678", 
       postalCode: "04010", address: "서울특별시 마포구 연남동", detailAddress: "연남서가 2층"
-    };
-
-    // 5. 저장 후 이동
-    setBookUid(book_uid);
-    sessionStorage.setItem("photos", JSON.stringify(preparedPhotos));
-    sessionStorage.setItem("orderData", JSON.stringify(demoOrder));
+    }));
     navigate("/upload"); 
   } catch (err) {
     alert("데모 로드 실패!");

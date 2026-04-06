@@ -38,7 +38,7 @@ export function Upload() {
 
   // 백엔드로 보낼 데이터 예쁘게 모으기
   const sceneData = photos.map(p => ({
-    serverFileName: p.serverFileName,
+    serverFileName: p.serverFileName|| "demo_sample.jpg",
     keyword: p.keywords
   }));
 
