@@ -1,17 +1,62 @@
 import { useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
-import { Sparkles, Upload, Wand2, Package, Loader2 } from "lucide-react";
+import { Sparkles, Upload, Wand2, Package, Loader2 , PlayCircle} from "lucide-react";
 import { useBookStore } from "../store/useBookStore";
+import { useState } from "react";
+interface DemoScene {
+  id: string;
+  image: string;
+  keywords: string; 
+  erverFileName: string;
+  processed: boolean;
+}
 
 export function Home() {
-  const { initBook, isCreating } = useBookStore();
-    const navigate = useNavigate();
-
+  const { initBook, setBookUid, isCreating } = useBookStore();
+  const navigate = useNavigate();
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
     // 버튼 클릭 시 실행될 로직
     const handleStart = async () => {
       await initBook(); // API 호출 및 UID 저장 대기
       navigate('/upload'); // 완료 후 이동
     };
+
+  const handleDemoStart = async () => {
+  try {
+    // 1. 책 생성
+    const initRes = await fetch("http://localhost:8000/api/book/init", { method: "POST" });
+    const { book_uid } = await initRes.json();
+
+    // 2. SQLite 데이터 가져오기
+    const demoRes = await fetch("http://localhost:8000/api/scene/demo");
+    const demoScenes: DemoScene[] = await demoRes.json();
+
+    // 3. 24장 사진 데이터 만들기 (이미 업로드 된 것처럼!)
+    const preparedPhotos = demoScenes.map((s) => ({
+      id: s.id,
+      image: s.image,
+      keywords: s.keywords || "", // 👈 키워드 자동 주입
+      serverFileName: "image_b681e7.png", // 데모용 기본 파일명
+      processed: true,
+      processing: false,
+    }));
+
+    // 4. 주문 정보 하드코딩 급으로 미리 넣기
+    const demoOrder = {
+      name: "박소영", phone: "010-1234-5678", 
+      postalCode: "04010", address: "서울특별시 마포구 연남동", detailAddress: "연남서가 2층"
+    };
+
+    // 5. 저장 후 이동
+    setBookUid(book_uid);
+    sessionStorage.setItem("photos", JSON.stringify(preparedPhotos));
+    sessionStorage.setItem("orderData", JSON.stringify(demoOrder));
+    navigate("/upload"); 
+  } catch (err) {
+    alert("데모 로드 실패!");
+  }
+};
+    
   return (
     <div className="min-h-screen bg-[#f5f1ea]">
       {/* Hero Section */}
@@ -36,12 +81,14 @@ export function Home() {
             저화질 캡처 사진을 고화질로 복원하고, 감성적인 에세이와 함께
             프리미엄 포토북으로 제작해드립니다.
           </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+
           <Button
                       size="lg"
                       onClick={handleStart} // 수정됨
                       disabled={isCreating} // 로딩 중 클릭 방지
                       className="bg-[#8b9a8e] hover:bg-[#6d7d70] text-white px-12 py-6 text-lg min-w-[240px]"
-                    >
+                      >
                       {isCreating ? (
                         <>
                           <Loader2 className="mr-2 h-5 w-5 animate-spin" />
@@ -51,6 +98,21 @@ export function Home() {
                         "나만의 에세이북 만들기"
                       )}
                     </Button>
+                    <Button
+              size="lg"
+              variant="outline"
+              onClick={handleDemoStart}
+              disabled={isCreating || isDemoLoading}
+              className="bg-white/10 hover:bg-white/20 text-white border-white/40 px-8 py-6 text-lg min-w-[240px] backdrop-blur-sm"
+              >
+              {isDemoLoading ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                <PlayCircle className="mr-2 h-5 w-5" />
+              )}
+              데모 데이터로 시작
+            </Button>
+              </div>
         </div>
       </section>
 
