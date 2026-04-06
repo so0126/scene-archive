@@ -5,6 +5,7 @@ import { useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { useBookStore } from "../store/useBookStore";
 import {
   Upload as UploadIcon,
   Loader2,
@@ -17,6 +18,7 @@ import { usePhotoFlow } from "../hooks/usePhotoFlow";
 export function Upload() {
   const navigate = useNavigate();
 
+  const { bookUid } = useBookStore();
   const {
     photos,
     currentIndex,
@@ -28,16 +30,38 @@ export function Upload() {
     canProceed,
   } = usePhotoFlow();
 
-  const handleNext = () => {
-    const allHaveKeywords = photos.every((p) => p.keywords.trim() !== "");
-    if (!allHaveKeywords) {
-      alert("모든 사진에 장면 키워드를 입력해주세요.");
-      return;
-    }
+  const handleNext = async () => {
+  if (!bookUid) {
+    alert("책 정보가 없습니다.");
+    return;
+  }
 
-    sessionStorage.setItem("photos", JSON.stringify(photos));
-    navigate("/editor");
-  };
+  // 백엔드로 보낼 데이터 예쁘게 모으기
+  const sceneData = photos.map(p => ({
+    serverFileName: p.serverFileName,
+    keyword: p.keywords
+  }));
+
+  try {
+    const response = await fetch("http://localhost:8000/api/scene/save-scenes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        book_uid: bookUid,
+        scenes: sceneData,
+      }),
+    });
+
+    if (response.ok) {
+      navigate("/order"); // 완료 후 주문 페이지로 바로 이동
+    } else {
+      const errorData = await response.json();
+      alert(`처리 실패: ${errorData.detail}`);
+    }
+  } catch (error) {
+    console.error("통신 에러:", error);
+  }
+};
 
   return (
     <div className="min-h-screen bg-[#f5f1ea]">

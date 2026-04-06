@@ -1,10 +1,17 @@
 import { useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
-import { Sparkles, Upload, Wand2, Package } from "lucide-react";
+import { Sparkles, Upload, Wand2, Package, Loader2 } from "lucide-react";
+import { useBookStore } from "../store/useBookStore";
 
 export function Home() {
-  const navigate = useNavigate();
+  const { initBook, isCreating } = useBookStore();
+    const navigate = useNavigate();
 
+    // 버튼 클릭 시 실행될 로직
+    const handleStart = async () => {
+      await initBook(); // API 호출 및 UID 저장 대기
+      navigate('/upload'); // 완료 후 이동
+    };
   return (
     <div className="min-h-screen bg-[#f5f1ea]">
       {/* Hero Section */}
@@ -30,12 +37,20 @@ export function Home() {
             프리미엄 포토북으로 제작해드립니다.
           </p>
           <Button
-            size="lg"
-            onClick={() => navigate("/upload")}
-            className="bg-[#8b9a8e] hover:bg-[#6d7d70] text-white px-12 py-6 text-lg"
-          >
-            나만의 에세이북 만들기
-          </Button>
+                      size="lg"
+                      onClick={handleStart} // 수정됨
+                      disabled={isCreating} // 로딩 중 클릭 방지
+                      className="bg-[#8b9a8e] hover:bg-[#6d7d70] text-white px-12 py-6 text-lg min-w-[240px]"
+                    >
+                      {isCreating ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          프로젝트 생성 중...
+                        </>
+                      ) : (
+                        "나만의 에세이북 만들기"
+                      )}
+                    </Button>
         </div>
       </section>
 
@@ -144,14 +159,6 @@ export function Home() {
                   </div>
                 </div>
               </div>
-
-              <Button
-                size="lg"
-                onClick={() => navigate("/upload")}
-                className="mt-10 bg-[#8b9a8e] hover:bg-[#6d7d70] text-white px-10 py-6"
-              >
-                지금 시작하기
-              </Button>
             </div>
           </div>
         </div>

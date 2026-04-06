@@ -1,5 +1,9 @@
-from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Body, Form, File, UploadFile, HTTPException
+from typing import List, Optional, Annotated
+from pydantic import BaseModel
 from dotenv import load_dotenv
+from bookprintapi.exceptions import ApiError
 import os
 
 load_dotenv()
@@ -7,9 +11,162 @@ load_dotenv()
 from bookprintapi import Client
 app = FastAPI()
 
+origins = [
+    "http://localhost:5173"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins, # 리액트 주소
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 client = Client()
+
+
+class OrderRequest(BaseModel):
+    book_uid: str
+    name: str
+    phone: str
+    postal_code: str
+    address: str
+    detail_address: Optional[str] = ""
+
+
+class SceneItem(BaseModel):
+    serverFileName: str
+    keyword: str
+
+
+class FinalizeAllRequest(BaseModel):
+    book_uid: str
+    scenes: List[SceneItem]
 
 @app.get("/")
 def root():
     return {"message": "API Key 로드 성공!"}
+
+# 1. 책 프로젝트 생성 API
+@app.post("/api/book/init")
+def init_book():
+    res = client.books.create(book_spec_uid="SQUAREBOOK_HC", title="Scene Archive", creation_type="TEST")
+    return {"book_uid": res["data"]["bookUid"]}
+
+
+@app.post("/api/photo/upload")
+async def upload_photo(book_uid: str = Form(...),
+    images: List[UploadFile] = File(...)
+):
+    print(f"--- 업로드 시작: {len(images)}장의 사진 ---")
+    server_files = []
+
+    for image in images:
+        temp_path = f"temp_{image.filename}"
+        try:
+            content = await image.read()
+            with open(temp_path, "wb") as f:
+                f.write(content)
+
+            # SDK 호출
+            res = client.photos.upload(book_uid, temp_path)
+            server_files.append({
+                "originalName": image.filename,
+                "serverFileName": res["data"]["fileName"]
+            })
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+
+    return {"status": "success", "files": server_files}
+
+@app.post("/api/scene/save-scenes")
+def save_scenes(data: FinalizeAllRequest):
+    print(f"--- 조립 시작: 책UID({data.book_uid}), 장면수({len(data.scenes)}) ---")
+
+    try:
+        if not data.scenes:
+            raise Exception("사진 데이터(scenes)가 비어있습니다!")
+
+        # 표지 생성
+        print("표지 생성 시도 중...")
+        client.covers.create(
+            data.book_uid,
+            template_uid="79yjMH3qRPly",
+            parameters={
+                "title": "Scene Archive",
+                "coverPhoto": data.scenes[0].serverFileName,
+                "dateRange": "26.01 - 27.03"
+            }
+        )
+        print("✅ 표지 생성 성공")
+
+        # 내지 삽입
+        for i, scene in enumerate(data.scenes):
+            print(f"{i + 1}번째 페이지 삽입 중: {scene.serverFileName}")
+            client.contents.insert(
+                data.book_uid,
+                template_uid="46VqZhVNOfAp",
+                parameters={
+                    "photo": scene.serverFileName,
+                    "diaryText": scene.keyword,
+                    "monthNum": "04",
+                    "dayNum": "25"
+                }
+            )
+        print(f"✅ 내지 {len(data.scenes)}장 삽입 성공")
+
+        return {"status": "success"}
+
+
+    except ApiError as e:
+
+        # ⭐ 여기가 핵심입니다! 스위트북 서버가 보낸 진짜 이유를 출력합니다.
+
+        print("❌ 스위트북 API 에러 발생!")
+
+        print(f"상태코드: {e.status_code}")
+
+        print(f"에러메시지: {e.message}")
+
+        if hasattr(e, 'details') and e.details:
+            print(f"상세내용: {e.details}")  # 👈 여기에 "dateRange가 너무 깁니다" 같은 게 써있을 거예요.
+
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+    except Exception as e:
+
+        print(f"❌ 일반 에러: {str(e)}")
+
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/order/create")
+def create_order(req: OrderRequest):
+    try:
+        # ⭐ 드디어 여기서 '확정'! 주문 전 마지막 관문입니다.
+        # 페이지 수가 부족하면 여기서 400 에러가 터지며 주문이 중단됩니다.
+        client.books.finalize(req.book_uid)
+        print(f"✅ 책 확정 성공: {req.book_uid}")
+
+        shipping_info = {
+            "recipientName": req.name,
+            "recipientPhone": req.phone,
+            "postalCode": req.postal_code,
+            "address1": req.address,
+            "address2": req.detail_address,
+        }
+
+        # 주문 생성
+        res = client.orders.create(
+            items=[{"bookUid": req.book_uid, "quantity": 1}],
+            shipping=shipping_info
+        )
+
+        data = res.get("data", res)
+        return {"order_uid": data.get("orderUid")}
+    except Exception as e:
+        print(f"❌ 주문/확정 실패: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
