@@ -5,7 +5,18 @@ import os
 DB_PATH = "scene_archive.db"
 
 
-def init_db():
+# backend/database.py
+
+def clear_dummy_scenes():
+    """일반 시작을 위해 더미 데이터를 싹 비우는 함수"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM dummy_scenes")  # 👈 테이블 비우기
+    conn.commit()
+    conn.close()
+
+
+def setup_demo_data():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     # 테이블 생성 (책 정보 및 장면 정보)
@@ -35,7 +46,6 @@ def init_db():
         cursor.executemany("INSERT INTO dummy_scenes VALUES (?, ?, ?, 1)", demo_data)
         conn.commit()
     conn.close()
-
 
 def get_demo_scenes():
     conn = sqlite3.connect(DB_PATH)

@@ -5,10 +5,8 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 from bookprintapi.exceptions import ApiError
 import os
-from database import init_db, get_demo_scenes
 
 load_dotenv()
-init_db()
 
 from bookprintapi import Client
 app = FastAPI()
@@ -54,6 +52,8 @@ def root():
 
 @app.get("/api/scene/demo")
 def fetch_demo_scenes():
+    from database import setup_demo_data, get_demo_scenes
+    setup_demo_data()
     # 1. SQLite에서 데이터 가져오기 (id, image, keywords)
     raw_data = get_demo_scenes()
 
@@ -84,6 +84,8 @@ def fetch_demo_scenes():
 # 1. 책 프로젝트 생성 API
 @app.post("/api/book/init")
 def init_book():
+    from database import clear_dummy_scenes
+    clear_dummy_scenes()
     res = client.books.create(book_spec_uid="SQUAREBOOK_HC", title="Scene Archive", creation_type="TEST")
     return {"book_uid": res["data"]["bookUid"]}
 

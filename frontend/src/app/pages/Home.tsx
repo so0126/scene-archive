@@ -18,38 +18,44 @@ export function Home() {
   const [isDemoLoading, setIsDemoLoading] = useState(false);
     // 버튼 클릭 시 실행될 로직
     const handleStart = async () => {
+      sessionStorage.clear();
       await initBook(); // API 호출 및 UID 저장 대기
       navigate('/upload'); // 완료 후 이동
     };
 
   const handleDemoStart = async () => {
-  try {
-    const response = await fetch("http://localhost:8000/api/scene/demo");
-    const data = await response.json(); // { book_uid, scenes }
+    setIsDemoLoading(true);
+    try {
+      const response = await fetch("http://localhost:8000/api/scene/demo");
+      const data = await response.json(); // { book_uid, scenes }
 
-    // 💡 백엔드에서 준 데이터를 그대로 PhotoData 형식으로 매핑
-    const preparedPhotos: PhotoData[] = data.scenes.map((s: DemoScene) => ({
-      id: s.id,
-      image: s.image,
-      keywords: s.keywords || "",
-      serverFileName: s.serverFileName, // 👈 여기서 "image_b681e7.png" 같은 가짜 말고 진짜를 넣음
-      processed: true,
-      processing: false,
-    }));
+      // 💡 백엔드에서 준 데이터를 그대로 PhotoData 형식으로 매핑
+      const preparedPhotos: PhotoData[] = data.scenes.map((s: DemoScene) => ({
+        id: s.id,
+        image: s.image,
+        keywords: s.keywords || "",
+        serverFileName: s.serverFileName, // 👈 여기서 "image_b681e7.png" 같은 가짜 말고 진짜를 넣음
+        processed: true,
+        processing: false,
+      }));
 
-    setBookUid(data.book_uid);
-    sessionStorage.setItem("photos", JSON.stringify(preparedPhotos));
-    
-    // 주문 데이터도 미리 세팅
-    sessionStorage.setItem("orderData", JSON.stringify({
-      name: "박소영", phone: "010-1234-5678", 
-      postalCode: "04010", address: "서울특별시 마포구 연남동", detailAddress: "연남서가 2층"
-    }));
-    navigate("/upload"); 
-  } catch (err) {
-    alert("데모 로드 실패!");
-  }
-};
+      setBookUid(data.book_uid);
+      sessionStorage.setItem("photos", JSON.stringify(preparedPhotos));
+      
+      // 주문 데이터도 미리 세팅
+      sessionStorage.setItem("orderData", JSON.stringify({
+        name: "박소영", phone: "010-1234-5678", 
+        postalCode: "04010", address: "서울특별시 마포구 연남동", detailAddress: "연남서가 2층"
+      }));
+      navigate("/upload"); 
+    } catch (err) {
+      alert("데모 데이터를 불러오는데 실패했습니다.");
+      console.error(err);
+    } finally {
+      // 💡 데모 로딩 종료
+      setIsDemoLoading(false);
+    }
+  };
     
   return (
     <div className="min-h-screen bg-[#f5f1ea]">
@@ -80,7 +86,7 @@ export function Home() {
           <Button
                       size="lg"
                       onClick={handleStart} // 수정됨
-                      disabled={isCreating} // 로딩 중 클릭 방지
+                      disabled={isCreating|| isDemoLoading} // 로딩 중 클릭 방지
                       className="bg-[#8b9a8e] hover:bg-[#6d7d70] text-white px-12 py-6 text-lg min-w-[240px]"
                       >
                       {isCreating ? (
@@ -100,11 +106,16 @@ export function Home() {
               className="bg-white/10 hover:bg-white/20 text-white border-white/40 px-8 py-6 text-lg min-w-[240px] backdrop-blur-sm"
               >
               {isDemoLoading ? (
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  데모 로드 중...
+                </>
               ) : (
-                <PlayCircle className="mr-2 h-5 w-5" />
+                <>
+                  <PlayCircle className="mr-2 h-5 w-5" />
+                  데모 데이터로 시작
+                </>
               )}
-              데모 데이터로 시작
             </Button>
               </div>
         </div>
