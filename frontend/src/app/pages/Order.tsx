@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { StepHeader } from "../components/common/StepHeader";
 import { SectionCard } from "../components/common/SectionCard";
@@ -6,6 +6,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Package } from "lucide-react";
+
 
 export function Order() {
   const navigate = useNavigate();
@@ -16,16 +17,14 @@ export function Order() {
     address: "",
     detailAddress: "",
   });
-  const [pageCount, setPageCount] = useState(1);
-
-  useEffect(() => {
-    // Get photos count
+  const [pageCount] = useState(() => {
     const photosData = sessionStorage.getItem("photos");
     if (photosData) {
       const photos = JSON.parse(photosData);
-      setPageCount(photos.length);
+      return photos.length;
     }
-  }, []);
+    return 1; // 데이터가 없을 때 기본값
+  });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;

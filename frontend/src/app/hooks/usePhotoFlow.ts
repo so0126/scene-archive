@@ -1,79 +1,99 @@
 import { useState } from "react";
+import { useBookStore } from "../store/useBookStore";
 import type { PhotoData } from "../types/photo";
 
+interface ServerUploadResponse {
+  originalName: string;
+  serverFileName: string;
+}
+
 export function usePhotoFlow() {
-  const [photos, setPhotos] = useState<PhotoData[]>([]);
+  const { bookUid } = useBookStore();
+  const [photos, setPhotos] = useState<PhotoData[]>([]); // 타입은 상황에 맞춰 수정
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !bookUid) return;
+    const files = Array.from(e.target.files);
 
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
+    // 1. [화면 업데이트] 사진 객체 생성 (사용자님 인터페이스 그대로!)
+    const newPhotos: PhotoData[] = files.map((file) => ({
+      id: Math.random().toString(36).substr(2, 9),
+      image: URL.createObjectURL(file),
+      keywords: "",
+      processing: true,
+      processed: false,
+      serverFileName: "",
+    }));
 
-      reader.onload = (event) => {
-        const newPhoto: PhotoData = {
-          id: Date.now().toString() + Math.random(),
-          image: event.target?.result as string,
-          keywords: "",
-          processing: true,
-          processed: false,
-        };
+    setPhotos((prev) => [...prev, ...newPhotos]);
 
-        setPhotos((prev) => {
-          const updatedPhotos = [...prev, newPhoto];
+    // 2. [서버 전송] FormData 구성
+    const formData = new FormData();
+    formData.append("book_uid", bookUid);
+    files.forEach((file) => formData.append("images", file));
 
-          setTimeout(() => {
-            setPhotos((current) =>
-              current.map((photo) =>
-                photo.id === newPhoto.id
-                  ? { ...photo, processing: false, processed: true }
-                  : photo
-              )
-            );
-          }, 2000);
+    try {
+      const response = await fetch("http://localhost:8000/api/photo/upload", {
+        method: "POST",
+        body: formData,
+      });
 
-          return updatedPhotos;
-        });
-      };
+      const result = await response.json(); 
 
-      reader.readAsDataURL(file);
-    });
+      if (result.status === "success") {
+        const uploadedFiles: ServerUploadResponse[] = result.files;
+
+        setPhotos((prev) =>
+          prev.map((photo) => {
+            if (photo.processed) return photo;
+
+            const matched = uploadedFiles.find((f) => {
+              return files.some(file => file.name === f.originalName);
+            });
+
+            return matched
+              ? {
+                  ...photo,
+                  serverFileName: matched.serverFileName,
+                  processing: false,
+                  processed: true,
+                }
+              : photo;
+          })
+        );
+      }
+    } catch (err) {
+      console.error("업로드 에러:", err);
+      setPhotos((prev) => prev.map(p => ({ ...p, processing: false })));
+    }
   };
 
   const handleKeywordChange = (value: string) => {
     setPhotos((prev) =>
       prev.map((photo, index) =>
-        index === currentIndex ? { ...photo, keywords: value } : photo
-      )
+        index === currentIndex ? { ...photo, keywords: value } : photo,
+      ),
     );
   };
 
   const handleDeletePhoto = (indexToDelete: number) => {
+    // 미리보기 URL 메모리 해제 (메모리 누수 방지)
+    URL.revokeObjectURL(photos[indexToDelete].image);
     setPhotos((prev) => prev.filter((_, index) => index !== indexToDelete));
-
-    setCurrentIndex((prev) => {
-      if (prev === 0) return 0;
-      if (indexToDelete <= prev) return prev - 1;
-      return prev;
-    });
+    setCurrentIndex((prev) =>
+      prev === 0 ? 0 : indexToDelete <= prev ? prev - 1 : prev,
+    );
   };
-
-  const currentPhoto = photos[currentIndex];
-
-  const canProceed =
-    photos.length > 0 &&
-    photos.every((p) => p.processed && p.keywords.trim() !== "");
 
   return {
     photos,
     currentIndex,
-    currentPhoto,
+    currentPhoto: photos[currentIndex],
     setCurrentIndex,
     handleImageUpload,
     handleKeywordChange,
     handleDeletePhoto,
-    canProceed,
+    canProceed: photos.length > 0 && photos.every((p) => p.processed && p.keywords.trim() !== ""),
   };
 }
