@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { SectionCard } from "../components/common/SectionCard";
 import { Button } from "../components/ui/button";
 import { CheckCircle2, BookOpen } from "lucide-react";
@@ -11,12 +11,41 @@ interface OrderedPhoto {
   keywords: string;
 }
 
+interface OrderDetail {
+  order_uid: string;
+  recipient_name: string;
+  status: string;
+  photo_count: number;
+  created_at: string;
+  scenes: OrderedPhoto[];
+}
+
 export function Success() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [orderedPhotos, setOrderedPhotos] = useState<OrderedPhoto[]>([]);
+  const [orderDetail, setOrderDetail] = useState<OrderDetail | null>(null);
 
   useEffect(() => {
     const loadContent = async () => {
+      const orderUid =
+        searchParams.get("orderUid") || sessionStorage.getItem("orderUid");
+
+      if (orderUid) {
+        try {
+          const response = await fetch(`http://localhost:8000/api/order/${orderUid}`);
+          if (response.ok) {
+            const order = await response.json();
+            setOrderDetail(order);
+            setOrderedPhotos(Array.isArray(order.scenes) ? order.scenes : []);
+            sessionStorage.setItem("orderUid", order.order_uid);
+            return;
+          }
+        } catch (err) {
+          console.error("주문 정보를 불러오지 못했습니다.", err);
+        }
+      }
+
       // 1. 💡 실제 업로드 시 저장되는 'photos' 키를 먼저 확인합니다.
       const localData = sessionStorage.getItem("photos");
       
@@ -40,14 +69,35 @@ export function Success() {
       }
     };
     loadContent();
-  }, []);
+  }, [searchParams]);
 
   return (
     <div className="min-h-screen bg-[#f5f1ea] py-20 px-4">
       <div className="max-w-4xl mx-auto text-center">
         <CheckCircle2 className="w-20 h-20 text-[#8b9a8e] mx-auto mb-6" />
         <h2 className="text-4xl font-serif text-[#2c2c2c] mb-4">주문이 완료되었습니다!</h2>
-        <p className="text-[#5c5c5c] mb-12">소영님의 소중한 장면들이 곧 책으로 엮여 배달됩니다.</p>
+        <p className="text-[#5c5c5c] mb-12">
+          {orderDetail?.recipient_name || "고객"}님의 소중한 장면들이 곧 책으로 엮여 배달됩니다.
+        </p>
+
+        {orderDetail && (
+          <SectionCard className="p-6 mb-8 text-left bg-white">
+            <div className="grid gap-3 text-sm text-[#5c5c5c] sm:grid-cols-2">
+              <p>
+                주문번호: <span className="text-[#2c2c2c]">{orderDetail.order_uid}</span>
+              </p>
+              <p>
+                주문상태: <span className="text-[#2c2c2c]">{orderDetail.status}</span>
+              </p>
+              <p>
+                제작 페이지 수: <span className="text-[#2c2c2c]">{orderDetail.photo_count}장</span>
+              </p>
+              <p>
+                주문일시: <span className="text-[#2c2c2c]">{new Date(orderDetail.created_at).toLocaleString()}</span>
+              </p>
+            </div>
+          </SectionCard>
+        )}
 
         <SectionCard className="p-8 mb-12 text-left bg-white/80 backdrop-blur-sm">
           <div className="flex items-center gap-2 mb-6 text-[#8b9a8e]">

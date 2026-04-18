@@ -7,6 +7,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Package } from "lucide-react";
 import { useBookStore } from "../store/useBookStore";
+import type { PhotoData } from "../types/photo";
 
 export function Order() {
   const navigate = useNavigate();
@@ -46,6 +47,8 @@ export function Order() {
       return;
     }
 
+    const photos: PhotoData[] = JSON.parse(sessionStorage.getItem("photos") || "[]");
+
     try {
       // 2. 백엔드 API 호출
       const response = await fetch("http://localhost:8000/api/order/create", {
@@ -60,6 +63,11 @@ export function Order() {
           postal_code: formData.postalCode,
           address: formData.address,
           detail_address: formData.detailAddress,
+          scenes: photos.map((photo) => ({
+            id: photo.id,
+            image: photo.image,
+            keywords: photo.keywords,
+          })),
         }),
       });
 
@@ -70,7 +78,7 @@ export function Order() {
         // 3. 성공 시 데이터 저장 및 페이지 이동
         sessionStorage.setItem("orderData", JSON.stringify(formData));
         sessionStorage.setItem("orderUid", result.order_uid);
-        navigate("/success");
+        navigate(`/success?orderUid=${encodeURIComponent(result.order_uid)}`);
       } else {
         const errorData = await response.json();
         // ❌ 에러 발생 시 (예: 최소 페이지 미달 등)

@@ -14,9 +14,16 @@ import {
   Trash2,
 } from "lucide-react";
 import { usePhotoFlow } from "../hooks/usePhotoFlow";
+import { useState } from "react";
+
+interface ApiErrorDetail {
+  message?: string;
+  error_code?: string;
+}
 
 export function Upload() {
   const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { bookUid } = useBookStore();
   const {
@@ -35,6 +42,9 @@ export function Upload() {
     alert("책 정보가 없습니다.");
     return;
   }
+  if (isSubmitting) {
+    return;
+  }
 
   // 백엔드로 보낼 데이터 예쁘게 모으기
   const sceneData = photos.map(p => ({
@@ -43,6 +53,7 @@ export function Upload() {
   }));
 
   try {
+    setIsSubmitting(true);
     const response = await fetch("http://localhost:8000/api/scene/save-scenes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -56,10 +67,25 @@ export function Upload() {
       navigate("/order"); // 완료 후 주문 페이지로 바로 이동
     } else {
       const errorData = await response.json();
-      alert(`처리 실패: ${errorData.detail}`);
+      const detail: ApiErrorDetail | string = errorData.detail;
+
+      if (typeof detail === "object" && detail?.error_code === "COVER_ALREADY_EXISTS") {
+        alert(
+          detail.message ||
+            "이미 표지가 생성된 포토북입니다. 새로 시작하거나 기존 주문 흐름을 이어서 진행해주세요.",
+        );
+        return;
+      }
+
+      const message =
+        typeof detail === "object" ? detail.message : detail;
+      alert(`처리 실패: ${message || "알 수 없는 오류가 발생했습니다."}`);
     }
   } catch (error) {
     console.error("통신 에러:", error);
+    alert("서버와 통신 중 문제가 발생했습니다.");
+  } finally {
+    setIsSubmitting(false);
   }
 };
 
@@ -314,10 +340,10 @@ export function Upload() {
 
                   <Button
                     onClick={handleNext}
-                    disabled={!canProceed}
+                    disabled={!canProceed || isSubmitting}
                     className="w-full bg-[#8b9a8e] hover:bg-[#6d7d70] text-white py-6 text-lg disabled:opacity-50"
                   >
-                    다음 단계로 →
+                    {isSubmitting ? "포토북 생성 중..." : "다음 단계로 →"}
                   </Button>
                   {photos.length > 0 && !canProceed && (
                     <p className="mt-3 text-sm text-center text-[#5c5c5c]">
