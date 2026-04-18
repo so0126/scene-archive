@@ -1,0 +1,13 @@
+services:
+  backend:
+    image: ghcr.io/${GHCR_OWNER}/scene-archive-backend:latest
+    container_name: scene-archive-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      SCENE_ARCHIVE_DB_PATH: /data/scene_archive.db
+    volumes:
+      - ./data:/data
