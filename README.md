@@ -189,12 +189,22 @@ SCENE_ARCHIVE_DB_PATH=scene_archive.db
 
 - `deploy/ec2/docker-compose.yml`: GHCR에 올라간 백엔드 이미지를 실행하는 Compose 파일
 - `deploy/ec2/.env.example`: EC2에서 사용할 환경변수 예시
+- `deploy/ec2/deploy.sh`: GHCR 로그인부터 배포까지 한 번에 실행하는 스크립트
+- `deploy/ec2/install-docker-ubuntu.sh`: Ubuntu EC2용 Docker 설치 스크립트
 
 ### 사전 준비
 
 1. EC2에 Docker와 Docker Compose를 설치합니다.
 2. 보안 그룹에서 `8000` 포트를 열거나, 이후 Nginx를 붙일 경우 `80`/`443`만 엽니다.
 3. GitHub Actions로 GHCR 이미지가 한 번 이상 푸시되어 있어야 합니다.
+
+Ubuntu EC2라면 아래 스크립트로 설치할 수 있습니다.
+
+```bash
+cd deploy/ec2
+chmod +x install-docker-ubuntu.sh
+./install-docker-ubuntu.sh
+```
 
 ### EC2 실행 절차
 
@@ -215,17 +225,20 @@ mkdir -p data
 
 ```txt
 GHCR_OWNER=<github-username>
+GHCR_USERNAME=<github-username>
+GHCR_TOKEN=<github-personal-access-token>
+APP_PORT=8000
 BOOKPRINT_API_KEY=<your-api-key>
 BOOKPRINT_BASE_URL=https://api-sandbox.sweetbook.com/v1
 FRONTEND_ORIGINS=https://<github-username>.github.io
 SCENE_ARCHIVE_DB_PATH=/data/scene_archive.db
 ```
 
-GHCR 로그인 후 컨테이너를 실행합니다.
+배포 스크립트를 실행합니다.
 
 ```bash
-echo <github-personal-access-token> | docker login ghcr.io -u <github-username> --password-stdin
-docker compose up -d
+chmod +x deploy.sh
+./deploy.sh
 ```
 
 ### 확인 방법
@@ -241,6 +254,7 @@ curl http://127.0.0.1:8000/
 - SQLite 파일은 `deploy/ec2/data/scene_archive.db`에 저장됩니다.
 - 컨테이너를 다시 띄워도 `data` 디렉터리를 유지하면 주문 데이터가 보존됩니다.
 - 퍼블릭 오픈 전에는 Nginx와 HTTPS를 붙이는 편이 안전합니다.
+- 운영 중 업데이트할 때는 `cd deploy/ec2 && ./deploy.sh` 만 다시 실행하면 됩니다.
 
 ---
 
