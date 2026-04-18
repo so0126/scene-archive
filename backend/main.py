@@ -28,7 +28,6 @@ app.add_middleware(
 client = Client()
 from database import get_order, init_orders_table, save_order
 
-BOOK_SPEC_UID = os.getenv("BOOK_SPEC_UID", "SQUAREBOOK_HC")
 BOOK_CREATION_TYPE = os.getenv("BOOK_CREATION_TYPE", "TEST")
 BOOK_EXTERNAL_REF = os.getenv("BOOK_EXTERNAL_REF", "")
 
@@ -87,7 +86,7 @@ def normalize_phone(value: str) -> str:
 
 def create_book(title: str):
     create_kwargs = {
-        "book_spec_uid": BOOK_SPEC_UID,
+        "book_spec_uid": "SQUAREBOOK_HC",
         "title": title,
         "creation_type": BOOK_CREATION_TYPE,
     }
