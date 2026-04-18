@@ -197,20 +197,6 @@ def save_scenes(data: FinalizeAllRequest):
         if not data.scenes:
             raise Exception("사진 데이터(scenes)가 비어있습니다!")
 
-        try:
-            existing_cover = client.covers.get(data.book_uid)
-            if existing_cover:
-                raise HTTPException(
-                    status_code=409,
-                    detail={
-                        "message": "이미 표지가 생성된 포토북입니다. 새로 시작하거나 기존 주문 흐름을 이어서 진행해주세요.",
-                        "error_code": "COVER_ALREADY_EXISTS",
-                    },
-                )
-        except ApiError as e:
-            if e.status_code != 404:
-                raise
-
         # 표지 생성
         print("표지 생성 시도 중...")
         client.covers.create(
