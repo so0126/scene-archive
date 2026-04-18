@@ -87,8 +87,14 @@ class Client:
     def _handle_response(self, resp: requests.Response) -> dict | None:
         if not resp.ok:
             raise ApiError.from_response(resp)
+        if resp.request.method == "POST" and resp.request.url.endswith("/Books"):
+            print(f"📡 /Books 응답 상태: {resp.status_code}")
+            print(f"📡 /Books 응답 본문: {resp.text!r}")
         if not resp.text:
-            return None
+            raise ApiError(
+                "Book creation returned an empty response body.",
+                status_code=resp.status_code,
+            )
         return resp.json()
 
     def _request(self, method: str, path: str, **kwargs) -> dict | None:
