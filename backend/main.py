@@ -53,6 +53,11 @@ class FinalizeAllRequest(BaseModel):
     scenes: List[SceneItem]
 
 
+class OrderLookupRequest(BaseModel):
+    order_uid: str
+    phone: str
+
+
 init_orders_table()
 
 
@@ -68,6 +73,10 @@ def is_duplicate_cover_error(error: ApiError) -> bool:
     return all(token in error_text for token in ["cover"]) and any(
         token in error_text for token in duplicate_tokens[:-1]
     )
+
+
+def normalize_phone(value: str) -> str:
+    return "".join(char for char in value if char.isdigit())
 
 
 @app.get("/")
@@ -291,4 +300,16 @@ def fetch_order(order_uid: str):
     order = get_order(order_uid)
     if not order:
         raise HTTPException(status_code=404, detail="주문 정보를 찾을 수 없습니다.")
+    return order
+
+
+@app.post("/api/order/lookup")
+def lookup_order(req: OrderLookupRequest):
+    order = get_order(req.order_uid)
+    if not order:
+        raise HTTPException(status_code=404, detail="주문 정보를 찾을 수 없습니다.")
+
+    if normalize_phone(order["recipient_phone"]) != normalize_phone(req.phone):
+        raise HTTPException(status_code=403, detail="주문번호 또는 연락처가 올바르지 않습니다.")
+
     return order
