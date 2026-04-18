@@ -1,11 +1,9 @@
 # backend/database.py
+import json
 import sqlite3
-import os
+from datetime import datetime, timezone
 
 DB_PATH = "scene_archive.db"
-
-
-# backend/database.py
 
 def clear_dummy_scenes():
     """일반 시작을 위해 더미 데이터를 싹 비우는 함수"""
@@ -46,6 +44,105 @@ def setup_demo_data():
         cursor.executemany("INSERT INTO dummy_scenes VALUES (?, ?, ?, 1)", demo_data)
         conn.commit()
     conn.close()
+
+
+def init_orders_table():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS orders (
+            order_uid TEXT PRIMARY KEY,
+            book_uid TEXT NOT NULL,
+            recipient_name TEXT NOT NULL,
+            recipient_phone TEXT NOT NULL,
+            postal_code TEXT NOT NULL,
+            address1 TEXT NOT NULL,
+            address2 TEXT DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'created',
+            photo_count INTEGER NOT NULL DEFAULT 0,
+            scenes_json TEXT NOT NULL DEFAULT '[]',
+            created_at TEXT NOT NULL
+        )
+        """
+    )
+    conn.commit()
+    conn.close()
+
+
+def save_order(
+    order_uid: str,
+    book_uid: str,
+    recipient_name: str,
+    recipient_phone: str,
+    postal_code: str,
+    address1: str,
+    address2: str = "",
+    scenes: list[dict] | None = None,
+    status: str = "created",
+):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    scenes = scenes or []
+    cursor.execute(
+        """
+        INSERT OR REPLACE INTO orders (
+            order_uid,
+            book_uid,
+            recipient_name,
+            recipient_phone,
+            postal_code,
+            address1,
+            address2,
+            status,
+            photo_count,
+            scenes_json,
+            created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            order_uid,
+            book_uid,
+            recipient_name,
+            recipient_phone,
+            postal_code,
+            address1,
+            address2,
+            status,
+            len(scenes),
+            json.dumps(scenes, ensure_ascii=False),
+            datetime.now(timezone.utc).isoformat(),
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_order(order_uid: str):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM orders WHERE order_uid = ?", (order_uid,))
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        return None
+
+    return {
+        "order_uid": row["order_uid"],
+        "book_uid": row["book_uid"],
+        "recipient_name": row["recipient_name"],
+        "recipient_phone": row["recipient_phone"],
+        "postal_code": row["postal_code"],
+        "address1": row["address1"],
+        "address2": row["address2"],
+        "status": row["status"],
+        "photo_count": row["photo_count"],
+        "scenes": json.loads(row["scenes_json"]),
+        "created_at": row["created_at"],
+    }
+
 
 def get_demo_scenes():
     conn = sqlite3.connect(DB_PATH)

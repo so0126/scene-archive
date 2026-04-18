@@ -24,6 +24,18 @@ app.add_middleware(
 )
 
 client = Client()
+from database import get_order, init_orders_table, save_order
+
+
+class SceneItem(BaseModel):
+    serverFileName: str
+    keyword: str
+
+
+class OrderSceneItem(BaseModel):
+    id: str
+    image: str
+    keywords: str
 
 
 class OrderRequest(BaseModel):
@@ -33,17 +45,29 @@ class OrderRequest(BaseModel):
     postal_code: str
     address: str
     detail_address: Optional[str] = ""
-
-
-class SceneItem(BaseModel):
-    serverFileName: str
-    keyword: str
+    scenes: List[OrderSceneItem] = []
 
 
 class FinalizeAllRequest(BaseModel):
     book_uid: str
     scenes: List[SceneItem]
 
+
+init_orders_table()
+
+
+def is_duplicate_cover_error(error: ApiError) -> bool:
+    error_text = " ".join(
+        [
+            error.message or "",
+            error.error_code or "",
+            " ".join(str(detail) for detail in error.details),
+        ]
+    ).lower()
+    duplicate_tokens = ["already", "exists", "duplicate", "cover"]
+    return all(token in error_text for token in ["cover"]) and any(
+        token in error_text for token in duplicate_tokens[:-1]
+    )
 
 
 @app.get("/")
@@ -124,6 +148,20 @@ def save_scenes(data: FinalizeAllRequest):
         if not data.scenes:
             raise Exception("사진 데이터(scenes)가 비어있습니다!")
 
+        try:
+            existing_cover = client.covers.get(data.book_uid)
+            if existing_cover:
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "message": "이미 표지가 생성된 포토북입니다. 새로 시작하거나 기존 주문 흐름을 이어서 진행해주세요.",
+                        "error_code": "COVER_ALREADY_EXISTS",
+                    },
+                )
+        except ApiError as e:
+            if e.status_code != 404:
+                raise
+
         # 표지 생성
         print("표지 생성 시도 중...")
         client.covers.create(
@@ -177,7 +215,26 @@ def save_scenes(data: FinalizeAllRequest):
         if hasattr(e, 'details') and e.details:
             print(f"상세내용: {e.details}")
 
-        raise HTTPException(status_code=400, detail=str(e))
+        if is_duplicate_cover_error(e):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "message": "이미 표지가 생성된 포토북입니다. 같은 책으로 다시 표지를 만들 수 없어요.",
+                    "error_code": "COVER_ALREADY_EXISTS",
+                },
+            )
+
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": str(e),
+                "error_code": e.error_code or "BOOKPRINT_API_ERROR",
+            },
+        )
+
+
+    except HTTPException:
+        raise
 
 
     except Exception as e:
@@ -210,7 +267,28 @@ def create_order(req: OrderRequest):
         )
 
         data = res.get("data", res)
-        return {"order_uid": data.get("orderUid")}
+        order_uid = data.get("orderUid")
+
+        save_order(
+            order_uid=order_uid,
+            book_uid=req.book_uid,
+            recipient_name=req.name,
+            recipient_phone=req.phone,
+            postal_code=req.postal_code,
+            address1=req.address,
+            address2=req.detail_address or "",
+            scenes=[scene.model_dump() for scene in req.scenes],
+        )
+
+        return {"order_uid": order_uid}
     except Exception as e:
         print(f"❌ 주문/확정 실패: {e}")
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/api/order/{order_uid}")
+def fetch_order(order_uid: str):
+    order = get_order(order_uid)
+    if not order:
+        raise HTTPException(status_code=404, detail="주문 정보를 찾을 수 없습니다.")
+    return order
