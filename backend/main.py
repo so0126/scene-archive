@@ -12,7 +12,9 @@ from bookprintapi import Client
 app = FastAPI()
 
 origins = [
-    "http://localhost:5173"
+    origin.strip()
+    for origin in os.getenv("FRONTEND_ORIGINS", "http://localhost:5173").split(",")
+    if origin.strip()
 ]
 
 app.add_middleware(

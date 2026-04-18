@@ -1,9 +1,10 @@
 # backend/database.py
 import json
+import os
 import sqlite3
 from datetime import datetime, timezone
 
-DB_PATH = "scene_archive.db"
+DB_PATH = os.getenv("SCENE_ARCHIVE_DB_PATH", "scene_archive.db")
 
 def clear_dummy_scenes():
     """일반 시작을 위해 더미 데이터를 싹 비우는 함수"""
