@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { apiFetch } from "../lib/api";
 import { useBookStore } from "../store/useBookStore";
 import type { PhotoData } from "../types/photo";
 
@@ -37,7 +38,7 @@ export function usePhotoFlow() {
     files.forEach((file) => formData.append("images", file));
 
     try {
-      const response = await fetch("http://localhost:8000/api/photo/upload", {
+      const response = await apiFetch("/api/photo/upload", {
         method: "POST",
         body: formData,
       });

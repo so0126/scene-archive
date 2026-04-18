@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { Sparkles, Upload, Wand2, Package, Loader2 , PlayCircle} from "lucide-react";
+import { apiFetch } from "../lib/api";
 import { useBookStore } from "../store/useBookStore";
 import { useState } from "react";
 import type { PhotoData } from "../types/photo"
@@ -26,7 +27,7 @@ export function Home() {
   const handleDemoStart = async () => {
     setIsDemoLoading(true);
     try {
-      const response = await fetch("http://localhost:8000/api/scene/demo");
+      const response = await apiFetch("/api/scene/demo");
       const data = await response.json(); // { book_uid, scenes }
 
       // 💡 백엔드에서 준 데이터를 그대로 PhotoData 형식으로 매핑

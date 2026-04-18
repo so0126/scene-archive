@@ -6,6 +6,7 @@ import { SectionCard } from "../components/common/SectionCard";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { apiFetch } from "../lib/api";
 
 interface OrderedPhoto {
   id: string;
@@ -52,7 +53,7 @@ export function OrderLookup() {
       setErrorMessage("");
       setResult(null);
 
-      const response = await fetch("http://localhost:8000/api/order/lookup", {
+      const response = await apiFetch("/api/order/lookup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

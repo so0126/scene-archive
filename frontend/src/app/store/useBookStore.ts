@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiFetch } from '../lib/api';
 
 interface BookState {
   bookUid: string | null;
@@ -21,7 +22,7 @@ export const useBookStore = create<BookState>((set) => ({
     sessionStorage.removeItem('photos');           // 👈 저장된 사진 데이터도 삭제!
     set({ bookUid: null, isCreating: true });      // 상태 초기화
     try {
-      const response = await fetch('http://localhost:8000/api/book/init', { method: 'POST' });
+      const response = await apiFetch('/api/book/init', { method: 'POST' });
       const data = await response.json();
 
       // 상태 업데이트와 동시에 세션 스토리지에도 저장

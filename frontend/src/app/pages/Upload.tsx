@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { usePhotoFlow } from "../hooks/usePhotoFlow";
 import { useState } from "react";
+import { apiFetch } from "../lib/api";
 
 interface ApiErrorDetail {
   message?: string;
@@ -54,7 +55,7 @@ export function Upload() {
 
   try {
     setIsSubmitting(true);
-    const response = await fetch("http://localhost:8000/api/scene/save-scenes", {
+    const response = await apiFetch("/api/scene/save-scenes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

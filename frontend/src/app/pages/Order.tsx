@@ -6,6 +6,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Package } from "lucide-react";
+import { apiFetch } from "../lib/api";
 import { useBookStore } from "../store/useBookStore";
 import type { PhotoData } from "../types/photo";
 
@@ -51,7 +52,7 @@ export function Order() {
 
     try {
       // 2. 백엔드 API 호출
-      const response = await fetch("http://localhost:8000/api/order/create", {
+      const response = await apiFetch("/api/order/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

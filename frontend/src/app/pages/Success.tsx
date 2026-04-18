@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router";
 import { SectionCard } from "../components/common/SectionCard";
 import { Button } from "../components/ui/button";
 import { CheckCircle2, BookOpen } from "lucide-react";
+import { apiFetch } from "../lib/api";
 
 // 인터페이스 정의 (타입 안전성)
 interface OrderedPhoto {
@@ -33,7 +34,7 @@ export function Success() {
 
       if (orderUid) {
         try {
-          const response = await fetch(`http://localhost:8000/api/order/${orderUid}`);
+          const response = await apiFetch(`/api/order/${orderUid}`);
           if (response.ok) {
             const order = await response.json();
             setOrderDetail(order);
@@ -56,7 +57,7 @@ export function Success() {
       } else {
         // 2. 💡 데이터가 없으면 백엔드 데모 데이터를 가져옴
         try {
-          const response = await fetch("http://localhost:8000/api/scene/demo");
+          const response = await apiFetch("/api/scene/demo");
           const demoData = await response.json();
           
           // 💡 핵심: demoData 자체가 아니라 demoData.scenes 배열을 넣어야 합니다!
