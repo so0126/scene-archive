@@ -82,11 +82,12 @@ def normalize_phone(value: str) -> str:
 
 
 def create_book(title: str):
-    create_kwargs = {
-        "book_spec_uid": "SQUAREBOOK_HC",
-        "title": title,
-        "creation_type": "EBOOK_SYNC",
-    }
+    return client.books.create(
+        book_spec_uid="SQUAREBOOK_HC",
+        title=title,
+        creation_type="TEST",
+        external_ref="PIPELINE-001",
+    )
 
 
 @app.get("/")
