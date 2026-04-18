@@ -1,5 +1,7 @@
 # React + TypeScript + Vite
 
+This frontend is deployed through GitHub Pages via `.github/workflows/frontend-pages.yml`.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
