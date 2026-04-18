@@ -88,41 +88,79 @@ def root():
 @app.get("/api/scene/demo")
 def fetch_demo_scenes():
     from database import setup_demo_data, get_demo_scenes
-    setup_demo_data()
-    # 1. SQLite에서 데이터 가져오기 (id, image, keywords)
-    raw_data = get_demo_scenes()
 
-    # 2. 책 UID 생성 (조립을 위해 필수)
-    res = client.books.create(book_spec_uid="SQUAREBOOK_HC", title="Demo", creation_type="TEST")
-    book_uid = res["data"]["bookUid"]
+    try:
+        setup_demo_data()
+        # 1. SQLite에서 데이터 가져오기 (id, image, keywords)
+        raw_data = get_demo_scenes()
 
-    # 3. ⭐️ SDK로 진짜 serverFileName 딱 하나만 뽑기
-    # backend/static/samples/demo.jpg 파일이 있어야 합니다!
-    sample_path = "static/samples/demo_sample.jpg"
-    upload_res = client.photos.upload(book_uid, sample_path)
-    real_server_name = upload_res["data"]["fileName"]
+        # 2. 책 UID 생성 (조립을 위해 필수)
+        res = client.books.create(
+            book_spec_uid="SQUAREBOOK_HC",
+            title="Demo",
+            creation_type="NORMAL",
+        )
+        book_uid = res["data"]["bookUid"]
 
-    # 4. 프론트로 보낼 때 serverFileName을 포함해서 쏴줍니다.
-    return {
-        "book_uid": book_uid,
-        "scenes": [
-            {
-                "id": item["id"],
-                "image": item["image"],
-                "keywords": item["keywords"],
-                "serverFileName": real_server_name,  # 👈 이게 있어야 조립이 됨!
-                "processed": True
-            } for item in raw_data
-        ]
-    }
+        # 3. SDK로 진짜 serverFileName 딱 하나만 뽑기
+        sample_path = "static/samples/demo_sample.jpg"
+        upload_res = client.photos.upload(book_uid, sample_path)
+        real_server_name = upload_res["data"]["fileName"]
+
+        # 4. 프론트로 보낼 때 serverFileName을 포함해서 쏴줍니다.
+        return {
+            "book_uid": book_uid,
+            "scenes": [
+                {
+                    "id": item["id"],
+                    "image": item["image"],
+                    "keywords": item["keywords"],
+                    "serverFileName": real_server_name,
+                    "processed": True
+                } for item in raw_data
+            ]
+        }
+    except ApiError as e:
+        print("❌ 데모 책 생성 실패")
+        print(f"상태코드: {e.status_code}")
+        print(f"에러메시지: {e.message}")
+        if e.details:
+            print(f"상세내용: {e.details}")
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": e.message or "데모 책 생성에 실패했습니다.",
+                "error_code": e.error_code or "BOOKPRINT_API_ERROR",
+                "details": e.details,
+            },
+        )
 
 # 1. 책 프로젝트 생성 API
 @app.post("/api/book/init")
 def init_book():
     from database import clear_dummy_scenes
     clear_dummy_scenes()
-    res = client.books.create(book_spec_uid="SQUAREBOOK_HC", title="Scene Archive", creation_type="TEST")
-    return {"book_uid": res["data"]["bookUid"]}
+    try:
+        res = client.books.create(
+            book_spec_uid="SQUAREBOOK_HC",
+            title="Scene Archive",
+            creation_type="NORMAL",
+        )
+        return {"book_uid": res["data"]["bookUid"]}
+    except ApiError as e:
+        print("❌ 책 초기화 실패")
+        print(f"상태코드: {e.status_code}")
+        print(f"에러메시지: {e.message}")
+        if e.details:
+            print(f"상세내용: {e.details}")
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": e.message or "책 생성에 실패했습니다.",
+                "error_code": e.error_code or "BOOKPRINT_API_ERROR",
+                "details": e.details,
+            },
+        )
 
 
 @app.post("/api/photo/upload")
