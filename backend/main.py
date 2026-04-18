@@ -84,7 +84,8 @@ def create_book(title: str):
     create_kwargs = {
         "book_spec_uid": "SQUAREBOOK_HC",
         "title": title,
-        "creation_type": EBOOK_SYNC
+        "creation_type": EBOOK_SYNC,
+        "external_ref"="PIPELINE-001",
     }
 
 
