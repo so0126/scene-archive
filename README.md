@@ -167,15 +167,17 @@ GitHub Actions 기준 배포 구성을 추가했습니다.
 ## GitHub 설정
 
 1. 저장소 `Settings > Pages`에서 `Build and deployment` 소스를 `GitHub Actions`로 설정합니다.
-2. 저장소 `Settings > Secrets and variables > Actions > Variables`에 `VITE_API_BASE_URL`을 추가합니다.
-3. 백엔드 실행 환경에는 `BOOKPRINT_API_KEY`, `BOOKPRINT_BASE_URL`, `FRONTEND_ORIGINS`, `SCENE_ARCHIVE_DB_PATH` 를 설정합니다.
-4. `FRONTEND_ORIGINS` 에 실제 Pages 주소를 포함합니다.
+2. 저장소 `Settings > Pages`에서 `Custom domain`을 `scene-archive.com`으로 설정합니다.
+3. 저장소 `Settings > Secrets and variables > Actions > Variables`에 `VITE_API_BASE_URL`을 추가합니다.
+4. `VITE_API_BASE_URL` 값은 `https://api.scene-archive.com`으로 설정합니다.
+5. 백엔드 실행 환경에는 `BOOKPRINT_API_KEY`, `BOOKPRINT_BASE_URL`, `FRONTEND_ORIGINS`, `SCENE_ARCHIVE_DB_PATH` 를 설정합니다.
+6. `FRONTEND_ORIGINS` 에 실제 Pages 주소와 커스텀 도메인을 포함합니다.
 
 예시:
 
 ```txt
-VITE_API_BASE_URL=https://your-backend.example.com
-FRONTEND_ORIGINS=http://localhost:5173,https://<github-username>.github.io
+VITE_API_BASE_URL=https://api.scene-archive.com
+FRONTEND_ORIGINS=http://localhost:5173,https://so0126.github.io,https://scene-archive.com,https://www.scene-archive.com
 SCENE_ARCHIVE_DB_PATH=scene_archive.db
 ```
 
@@ -258,7 +260,94 @@ curl http://127.0.0.1:8000/
 
 ---
 
-## 8. 커밋 메시지 규칙
+## 8. Cloudflare 및 HTTPS 연결
+
+현재 도메인은 `scene-archive.com`, 백엔드 도메인은 `api.scene-archive.com` 기준으로 설정합니다.
+
+### Cloudflare DNS
+
+Cloudflare `DNS > Records`에서 아래 레코드를 추가합니다.
+
+```txt
+Type: A
+Name: api
+Content: 15.165.15.78
+TTL: Auto
+Proxy status: DNS only
+```
+
+```txt
+Type: CNAME
+Name: @
+Content: so0126.github.io
+TTL: Auto
+Proxy status: DNS only
+```
+
+```txt
+Type: CNAME
+Name: www
+Content: scene-archive.com
+TTL: Auto
+Proxy status: DNS only
+```
+
+### GitHub Pages
+
+- `Settings > Pages > Custom domain`에 `scene-archive.com`을 입력합니다.
+- `Enforce HTTPS`가 활성화되면 체크합니다.
+- 프론트 빌드 결과에 `CNAME` 파일이 포함되도록 `frontend/public/CNAME`을 추가했습니다.
+
+### EC2 Nginx 설정
+
+```bash
+sudo apt update
+sudo apt install -y nginx
+sudo nano /etc/nginx/sites-available/scene-archive
+```
+
+```nginx
+server {
+    listen 80;
+    server_name api.scene-archive.com;
+
+    client_max_body_size 50M;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+```bash
+sudo ln -s /etc/nginx/sites-available/scene-archive /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
+```
+
+### HTTPS 인증서 발급
+
+```bash
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d api.scene-archive.com
+```
+
+### EC2 백엔드 환경변수
+
+`deploy/ec2/.env`의 `FRONTEND_ORIGINS`는 아래처럼 설정합니다.
+
+```txt
+FRONTEND_ORIGINS=https://scene-archive.com,https://www.scene-archive.com,https://so0126.github.io
+```
+
+---
+
+## 9. 커밋 메시지 규칙
 
 커밋 메시지는 아래 형식을 따릅니다.
 
