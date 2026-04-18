@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createHashRouter } from "react-router";
 import { Home } from "./pages/Home";
 import { Upload } from "./pages/Upload";
 import { Editor } from "./pages/Editor";
@@ -6,7 +6,7 @@ import { Order } from "./pages/Order";
 import { OrderLookup } from "./pages/OrderLookup";
 import { Success } from "./pages/Success";
 
-export const router = createBrowserRouter([
+export const router = createHashRouter([
   {
     path: "/",
     Component: Home,
@@ -31,4 +31,6 @@ export const router = createBrowserRouter([
     path: "/order-lookup",
     Component: OrderLookup,
   },
-]);
+], {
+  basename: import.meta.env.BASE_URL,
+});
