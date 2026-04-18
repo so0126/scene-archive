@@ -28,6 +28,9 @@ app.add_middleware(
 client = Client()
 from database import get_order, init_orders_table, save_order
 
+BOOK_CREATION_TYPE = os.getenv("BOOK_CREATION_TYPE", "TEST")
+BOOK_EXTERNAL_REF = os.getenv("BOOK_EXTERNAL_REF", "")
+
 class SceneItem(BaseModel):
     serverFileName: str
     keyword: str
@@ -84,9 +87,12 @@ def create_book(title: str):
     create_kwargs = {
         "book_spec_uid": "SQUAREBOOK_HC",
         "title": title,
-        "creation_type": EBOOK_SYNC,
-        "external_ref"="PIPELINE-001",
+        "creation_type": BOOK_CREATION_TYPE,
     }
+    if BOOK_EXTERNAL_REF:
+        create_kwargs["external_ref"] = BOOK_EXTERNAL_REF
+    print("📘 책 생성 요청:", create_kwargs)
+    return client.books.create(**create_kwargs)
 
 
 @app.get("/")
