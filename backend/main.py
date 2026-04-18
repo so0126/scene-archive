@@ -28,6 +28,10 @@ app.add_middleware(
 client = Client()
 from database import get_order, init_orders_table, save_order
 
+BOOK_SPEC_UID = os.getenv("BOOK_SPEC_UID", "SQUAREBOOK_HC")
+BOOK_CREATION_TYPE = os.getenv("BOOK_CREATION_TYPE", "TEST")
+BOOK_EXTERNAL_REF = os.getenv("BOOK_EXTERNAL_REF", "")
+
 
 class SceneItem(BaseModel):
     serverFileName: str
@@ -81,6 +85,17 @@ def normalize_phone(value: str) -> str:
     return "".join(char for char in value if char.isdigit())
 
 
+def create_book(title: str):
+    create_kwargs = {
+        "book_spec_uid": BOOK_SPEC_UID,
+        "title": title,
+        "creation_type": BOOK_CREATION_TYPE,
+    }
+    if BOOK_EXTERNAL_REF:
+        create_kwargs["external_ref"] = BOOK_EXTERNAL_REF
+    return client.books.create(**create_kwargs)
+
+
 @app.get("/")
 def root():
     return {"message": "API Key 로드 성공!"}
@@ -95,11 +110,7 @@ def fetch_demo_scenes():
         raw_data = get_demo_scenes()
 
         # 2. 책 UID 생성 (조립을 위해 필수)
-        res = client.books.create(
-            book_spec_uid="SQUAREBOOK_HC",
-            title="Demo",
-            creation_type="TEST",
-        )
+        res = create_book("Demo")
         book_uid = res["data"]["bookUid"]
 
         # 3. SDK로 진짜 serverFileName 딱 하나만 뽑기
@@ -141,11 +152,7 @@ def init_book():
     from database import clear_dummy_scenes
     clear_dummy_scenes()
     try:
-        res = client.books.create(
-            book_spec_uid="SQUAREBOOK_HC",
-            title="Scene Archive",
-            creation_type="TEST",
-        )
+        res = create_book("Scene Archive")
         return {"book_uid": res["data"]["bookUid"]}
     except ApiError as e:
         print("❌ 책 초기화 실패")
