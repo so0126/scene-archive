@@ -178,3 +178,105 @@ VITE_API_BASE_URL=https://your-backend.example.com
 FRONTEND_ORIGINS=http://localhost:5173,https://<github-username>.github.io
 SCENE_ARCHIVE_DB_PATH=scene_archive.db
 ```
+
+---
+
+## 7. EC2 백엔드 배포
+
+빠르게 배포하려면 EC2에서 Docker Compose로 백엔드를 실행하는 구성이 가장 단순합니다.
+
+### 배포 파일
+
+- `deploy/ec2/docker-compose.yml`: GHCR에 올라간 백엔드 이미지를 실행하는 Compose 파일
+- `deploy/ec2/.env.example`: EC2에서 사용할 환경변수 예시
+
+### 사전 준비
+
+1. EC2에 Docker와 Docker Compose를 설치합니다.
+2. 보안 그룹에서 `8000` 포트를 열거나, 이후 Nginx를 붙일 경우 `80`/`443`만 엽니다.
+3. GitHub Actions로 GHCR 이미지가 한 번 이상 푸시되어 있어야 합니다.
+
+### EC2 실행 절차
+
+```bash
+mkdir -p ~/scene-archive/deploy/ec2
+cd ~/scene-archive
+```
+
+저장소를 클론하거나 배포 파일만 서버로 옮긴 뒤:
+
+```bash
+cd deploy/ec2
+cp .env.example .env
+mkdir -p data
+```
+
+`.env` 값을 실제 환경에 맞게 수정합니다.
+
+```txt
+GHCR_OWNER=<github-username>
+BOOKPRINT_API_KEY=<your-api-key>
+BOOKPRINT_BASE_URL=https://api-sandbox.sweetbook.com/v1
+FRONTEND_ORIGINS=https://<github-username>.github.io
+SCENE_ARCHIVE_DB_PATH=/data/scene_archive.db
+```
+
+GHCR 로그인 후 컨테이너를 실행합니다.
+
+```bash
+echo <github-personal-access-token> | docker login ghcr.io -u <github-username> --password-stdin
+docker compose up -d
+```
+
+### 확인 방법
+
+```bash
+docker compose ps
+docker compose logs -f backend
+curl http://127.0.0.1:8000/
+```
+
+### 운영 시 주의사항
+
+- SQLite 파일은 `deploy/ec2/data/scene_archive.db`에 저장됩니다.
+- 컨테이너를 다시 띄워도 `data` 디렉터리를 유지하면 주문 데이터가 보존됩니다.
+- 퍼블릭 오픈 전에는 Nginx와 HTTPS를 붙이는 편이 안전합니다.
+
+---
+
+## 8. 커밋 메시지 규칙
+
+커밋 메시지는 아래 형식을 따릅니다.
+
+```txt
+<scope>/<type>: <한국어 커밋 메시지>
+```
+
+### scope
+
+- `front`: 프론트엔드 관련 변경
+- `back`: 백엔드 관련 변경
+- `common`: 공통 설정, 문서, 프로젝트 전반 변경
+
+### type
+
+| type | 의미 |
+|---|---|
+| feat | 기능 개발 |
+| fix | 버그 수정 |
+| design | UI/UX 변경 (frontend 전용) |
+| refactor | 코드 구조 개선 |
+| docs | 문서 |
+| test | 테스트 코드 |
+| build | 빌드 파일 수정 |
+| ci | CI 설정 파일 수정 |
+| chore | 자잘한 수정이나 빌드 업데이트 |
+| rename | 파일 혹은 폴더명 수정 |
+| remove | 파일 삭제 |
+| perf | 성능 개선 |
+
+### 예시
+
+- `front/feat: 주문 조회 페이지 추가`
+- `back/fix: 주문 생성 응답 예외 처리 수정`
+- `common/docs: 배포 가이드 문서화`
