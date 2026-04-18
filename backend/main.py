@@ -98,7 +98,7 @@ def fetch_demo_scenes():
         res = client.books.create(
             book_spec_uid="SQUAREBOOK_HC",
             title="Demo",
-            creation_type="EBOOK_SYNC",
+            creation_type="TEST",
         )
         book_uid = res["data"]["bookUid"]
 
@@ -144,7 +144,7 @@ def init_book():
         res = client.books.create(
             book_spec_uid="SQUAREBOOK_HC",
             title="Scene Archive",
-            creation_type="EBOOK_SYNC",
+            creation_type="TEST",
         )
         return {"book_uid": res["data"]["bookUid"]}
     except ApiError as e:
