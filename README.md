@@ -105,18 +105,26 @@ scene-archive/
 
 ## 3. 사용한 API 목록
 
-본 프로젝트에서는 Sweetbook SDK / API를 활용해 **책 생성**, **주문 생성**, **주문 조회** 기능을 연결했습니다.
+본 프로젝트에서는 Sweetbook SDK / API를 활용해 **책 생성**과 **주문 생성**을 연결했고, 주문 조회는 별도 백엔드 API로 구현했습니다.
+
+### Sweetbook SDK / External API
 
 | API | 용도 |
 |---|---|
 | POST /books | 새 포토북 생성 |
-| POST /covers | 포토북 표지 생성|
+| POST /covers | 포토북 표지 생성 |
 | POST /contents | 포토북 내지 생성 |
 | POST /photos | 포토북에 사진 업로드 |
 | POST /orders | 생성된 포토북 주문 생성 |
+| GET /orders/{orderUid} | 주문 상세 조회 |
+
+### Internal Backend API
+
+| API | 용도 |
+|---|---|
 | POST /api/order/lookup | 주문번호와 연락처 기준 주문 조회 |
 
-※ 본 프로젝트는 Sweetbook SDK를 통해 API를 호출하는 방식으로 구현했기 때문에, 실제 연동 방식에 따라 내부 호출 구조는 달라질 수 있습니다.  
+※ 현재 `POST /api/order/lookup`는 Sweetbook SDK 조회 API를 직접 호출하는 구조가 아니라, 서버에 저장한 주문 정보와 연락처를 기준으로 조회하는 내부 API입니다.  
 ※ 초기 기획에 포함되었던 이미지 업스케일링, 키워드 기반 내용 추출 관련 API는 현재 구현되지 않았습니다.
 
 ---
