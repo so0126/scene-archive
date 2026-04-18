@@ -117,6 +117,14 @@ export function Home() {
                 </>
               )}
             </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => navigate("/order-lookup")}
+              className="bg-transparent hover:bg-white/15 text-white border-white/40 px-8 py-6 text-lg min-w-[240px] backdrop-blur-sm"
+            >
+              주문 조회하기
+            </Button>
               </div>
         </div>
       </section>
