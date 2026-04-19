@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { StepHeader } from "../components/common/StepHeader";
 import { SectionCard } from "../components/common/SectionCard";
 import { Button } from "../components/ui/button";

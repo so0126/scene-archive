@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Sparkles, Upload, Wand2, Package, Loader2 , PlayCircle} from "lucide-react";
 import { apiFetch } from "../lib/api";

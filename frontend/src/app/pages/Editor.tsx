@@ -1,7 +1,7 @@
 import type React from "react";
 import type { PhotoData } from "../types/photo";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
 import { StepHeader } from "../components/common/StepHeader";

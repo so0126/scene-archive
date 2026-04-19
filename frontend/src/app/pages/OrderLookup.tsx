@@ -1,6 +1,6 @@
 import type React from "react";
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { PackageSearch, Search } from "lucide-react";
 import { SectionCard } from "../components/common/SectionCard";
 import { Button } from "../components/ui/button";

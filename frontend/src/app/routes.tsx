@@ -1,4 +1,4 @@
-import { createHashRouter } from "react-router";
+import { createHashRouter } from "react-router-dom";
 import { Home } from "./pages/Home";
 import { Upload } from "./pages/Upload";
 import { Editor } from "./pages/Editor";

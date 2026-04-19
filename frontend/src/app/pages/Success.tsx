@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { SectionCard } from "../components/common/SectionCard";
 import { Button } from "../components/ui/button";
 import { CheckCircle2, BookOpen } from "lucide-react";

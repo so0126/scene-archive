@@ -1,7 +1,7 @@
 import { StepHeader } from "../components/common/StepHeader";
 import { SectionCard } from "../components/common/SectionCard";
 import { StatusBadge } from "../components/common/StatusBadge";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
