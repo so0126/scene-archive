@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { StepHeader } from "../components/common/StepHeader";
 import { SectionCard } from "../components/common/SectionCard";
@@ -7,27 +7,81 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Package } from "lucide-react";
 import { apiFetch } from "../lib/api";
+import {
+  formatPrice,
+  loadOrderEstimate,
+  requestOrderEstimate,
+  type OrderEstimate,
+} from "../lib/orderEstimate";
 import { useBookStore } from "../store/useBookStore";
 import type { PhotoData } from "../types/photo";
 
 export function Order() {
   const navigate = useNavigate();
   const { bookUid } = useBookStore();
-  const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    postalCode: "",
-    address: "",
-    detailAddress: "",
+  const [formData, setFormData] = useState(() => {
+    const saved = sessionStorage.getItem("orderData");
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return {
+          name: "",
+          phone: "",
+          postalCode: "",
+          address: "",
+          detailAddress: "",
+        };
+      }
+    }
+    return {
+      name: "",
+      phone: "",
+      postalCode: "",
+      address: "",
+      detailAddress: "",
+    };
   });
+  const [estimate, setEstimate] = useState<OrderEstimate | null>(() =>
+    loadOrderEstimate(),
+  );
+  const [isEstimateLoading, setIsEstimateLoading] = useState(false);
+  const [estimateError, setEstimateError] = useState("");
   const [pageCount] = useState(() => {
     const photosData = sessionStorage.getItem("photos");
     if (photosData) {
       const photos = JSON.parse(photosData);
-      return photos.length;
+      return Math.max(photos.length, 24);
     }
-    return 1; // 데이터가 없을 때 기본값
+    return 24;
   });
+
+  useEffect(() => {
+    const fetchEstimate = async () => {
+      if (!bookUid) {
+        return;
+      }
+
+      const photos: PhotoData[] = JSON.parse(
+        sessionStorage.getItem("photos") || "[]",
+      );
+
+      setIsEstimateLoading(true);
+      setEstimateError("");
+
+      try {
+        const nextEstimate = await requestOrderEstimate(bookUid, photos.length);
+        setEstimate(nextEstimate);
+      } catch (error) {
+        console.error("견적 조회 에러:", error);
+        setEstimateError("견적을 불러오지 못했어요.");
+      } finally {
+        setIsEstimateLoading(false);
+      }
+    };
+
+    void fetchEstimate();
+  }, [bookUid]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -266,7 +320,7 @@ export function Order() {
                       Scene Archive 포토북
                     </p>
                     <p className="text-xs text-[#5c5c5c]">
-                      A4 하드커버 · 총 {pageCount}페이지
+                      A4 하드커버 · 총 {estimate?.production_page_count ?? pageCount}페이지
                     </p>
                   </div>
                 </div>
@@ -275,17 +329,33 @@ export function Order() {
               <div className="border-t border-[#e5e5e5] pt-4 space-y-3">
                 <div className="flex justify-between">
                   <span className="text-[#5c5c5c]">상품 가격</span>
-                  <span className="text-[#2c2c2c]">45,000원</span>
+                  <span className="text-[#2c2c2c]">
+                    {estimate ? formatPrice(estimate.product_price) : "-"}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#5c5c5c]">배송비</span>
-                  <span className="text-[#2c2c2c]">무료</span>
+                  <span className="text-[#2c2c2c]">
+                    {estimate
+                      ? estimate.shipping_price > 0
+                        ? formatPrice(estimate.shipping_price)
+                        : "무료"
+                      : "-"}
+                  </span>
                 </div>
                 <div className="flex justify-between pt-3 border-t border-[#e5e5e5]">
                   <span className="text-lg text-[#2c2c2c]">총 결제 금액</span>
-                  <span className="text-2xl text-[#8b9a8e]">45,000원</span>
+                  <span className="text-2xl text-[#8b9a8e]">
+                    {estimate ? formatPrice(estimate.total_price) : "-"}
+                  </span>
                 </div>
               </div>
+
+              {(isEstimateLoading || estimateError) && (
+                <div className="mt-4 rounded-xl bg-[#f9f9f9] px-4 py-3 text-sm text-[#5c5c5c]">
+                  {isEstimateLoading ? "실시간 제작 견적을 계산 중입니다." : estimateError}
+                </div>
+              )}
 
               <div className="mt-6 p-4 bg-[#f0f7f4] rounded-xl">
                 <p className="text-xs text-[#5c5c5c] leading-relaxed">

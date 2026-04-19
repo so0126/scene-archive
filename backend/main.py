@@ -29,6 +29,10 @@ app.add_middleware(
 client = Client()
 from database import get_order, init_orders_table, save_order
 
+MIN_PRODUCTION_PAGES = 24
+DEMO_PRODUCT_PRICE = 45000
+DEMO_SHIPPING_PRICE = 0
+
 
 class SceneItem(BaseModel):
     serverFileName: str
@@ -59,6 +63,12 @@ class FinalizeAllRequest(BaseModel):
 class OrderLookupRequest(BaseModel):
     order_uid: str
     phone: str
+
+
+class OrderEstimateRequest(BaseModel):
+    book_uid: str
+    scene_count: int = 0
+    quantity: int = 1
 
 
 init_orders_table()
@@ -139,6 +149,94 @@ def create_book(title: str):
     )
 
 
+def calculate_production_page_count(scene_count: int) -> int:
+    return max(scene_count, MIN_PRODUCTION_PAGES)
+
+
+def extract_numeric_value(payload: dict | None, keys: list[str]) -> int | None:
+    if not isinstance(payload, dict):
+        return None
+
+    for key in keys:
+        value = payload.get(key)
+        if isinstance(value, (int, float)):
+            return int(value)
+        if isinstance(value, str):
+            digits = "".join(char for char in value if char.isdigit())
+            if digits:
+                return int(digits)
+    return None
+
+
+def normalize_estimate_response(order_payload: dict | None, *, scene_count: int, quantity: int) -> dict:
+    data = unwrap_api_data(order_payload or {})
+    items = data.get("items") if isinstance(data, dict) else []
+    first_item = items[0] if isinstance(items, list) and items else {}
+
+    product_price = extract_numeric_value(
+        data,
+        ["productPrice", "productAmount", "itemPrice", "itemAmount", "subtotalPrice", "subtotalAmount"],
+    )
+    if product_price is None:
+        product_price = extract_numeric_value(
+            first_item,
+            ["productPrice", "productAmount", "itemPrice", "itemAmount", "subtotalPrice", "subtotalAmount"],
+        )
+
+    shipping_price = extract_numeric_value(
+        data,
+        ["shippingPrice", "shippingAmount", "deliveryPrice", "deliveryAmount"],
+    )
+    if shipping_price is None:
+        shipping_price = extract_numeric_value(
+            first_item,
+            ["shippingPrice", "shippingAmount", "deliveryPrice", "deliveryAmount"],
+        )
+
+    total_price = extract_numeric_value(
+        data,
+        ["totalPrice", "totalAmount", "paymentAmount", "payAmount", "amount", "finalAmount"],
+    )
+    if total_price is None:
+        total_price = extract_numeric_value(
+            first_item,
+            ["totalPrice", "totalAmount", "paymentAmount", "payAmount", "amount", "finalAmount"],
+        )
+
+    if product_price is None:
+        product_price = 0
+    if shipping_price is None:
+        shipping_price = 0
+    if total_price is None:
+        total_price = product_price + shipping_price
+
+    return {
+        "book_uid": data.get("bookUid") or data.get("book_uid"),
+        "scene_count": scene_count,
+        "production_page_count": calculate_production_page_count(scene_count),
+        "quantity": quantity,
+        "product_price": product_price,
+        "shipping_price": shipping_price,
+        "total_price": total_price,
+        "source": "sdk",
+    }
+
+
+def build_demo_estimate(*, book_uid: str, scene_count: int, quantity: int = 1) -> dict:
+    product_price = DEMO_PRODUCT_PRICE * quantity
+    shipping_price = DEMO_SHIPPING_PRICE
+    return {
+        "book_uid": book_uid,
+        "scene_count": scene_count,
+        "production_page_count": calculate_production_page_count(scene_count),
+        "quantity": quantity,
+        "product_price": product_price,
+        "shipping_price": shipping_price,
+        "total_price": product_price + shipping_price,
+        "source": "demo",
+    }
+
+
 @app.get("/")
 def root():
     return {"message": "API Key 로드 성공!"}
@@ -153,6 +251,13 @@ def fetch_demo_scenes():
 
     return {
         "book_uid": book_uid,
+        "shipping": {
+            "name": "박소영",
+            "phone": "010-1234-5678",
+            "postalCode": "04010",
+            "address": "서울특별시 마포구 연남동",
+            "detailAddress": "연남서가 2층",
+        },
         "scenes": [
             {
                 "id": item["id"],
@@ -182,6 +287,41 @@ def init_book():
             status_code=400,
             detail={
                 "message": e.message or "책 생성에 실패했습니다.",
+                "error_code": e.error_code or "BOOKPRINT_API_ERROR",
+                "details": e.details,
+            },
+        )
+
+
+@app.post("/api/order/estimate")
+def estimate_order(req: OrderEstimateRequest):
+    try:
+        scene_count = max(req.scene_count, 0)
+        quantity = max(req.quantity, 1)
+
+        if is_demo_book_uid(req.book_uid):
+            return build_demo_estimate(
+                book_uid=req.book_uid,
+                scene_count=scene_count,
+                quantity=quantity,
+            )
+
+        res = client.orders.estimate(
+            items=[{"bookUid": req.book_uid, "quantity": quantity}],
+        )
+        normalized = normalize_estimate_response(
+            res,
+            scene_count=scene_count,
+            quantity=quantity,
+        )
+        if not normalized["book_uid"]:
+            normalized["book_uid"] = req.book_uid
+        return normalized
+    except ApiError as e:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": e.message or "가격 견적 조회에 실패했습니다.",
                 "error_code": e.error_code or "BOOKPRINT_API_ERROR",
                 "details": e.details,
             },

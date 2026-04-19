@@ -16,6 +16,7 @@ import {
 import { usePhotoFlow } from "../hooks/usePhotoFlow";
 import { useState } from "react";
 import { apiFetch } from "../lib/api";
+import { requestOrderEstimate } from "../lib/orderEstimate";
 
 interface ApiErrorDetail {
   message?: string;
@@ -65,6 +66,11 @@ export function Upload() {
     });
 
     if (response.ok) {
+      try {
+        await requestOrderEstimate(bookUid, photos.length);
+      } catch (error) {
+        console.error("주문 견적 계산 에러:", error);
+      }
       navigate("/order"); // 완료 후 주문 페이지로 바로 이동
     } else {
       const errorData = await response.json();

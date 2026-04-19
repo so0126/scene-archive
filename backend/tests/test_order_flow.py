@@ -89,6 +89,54 @@ class OrderFlowTests(unittest.TestCase):
             self.assertEqual(lookup_response.json()["order_uid"], "ord_test_001")
             self.assertEqual(lookup_response.json()["recipient_phone"], "010-1234-5678")
 
+    def test_order_estimate_returns_normalized_sdk_payload(self):
+        with patch.object(main.client.orders, "estimate") as mock_estimate:
+            mock_estimate.return_value = {
+                "data": {
+                    "bookUid": "bk_test_001",
+                    "productPrice": 49000,
+                    "shippingPrice": 3000,
+                    "totalPrice": 52000,
+                }
+            }
+
+            response = self.client.post(
+                "/api/order/estimate",
+                json={"book_uid": "bk_test_001", "scene_count": 5, "quantity": 1},
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(
+                response.json(),
+                {
+                    "book_uid": "bk_test_001",
+                    "scene_count": 5,
+                    "production_page_count": 24,
+                    "quantity": 1,
+                    "product_price": 49000,
+                    "shipping_price": 3000,
+                    "total_price": 52000,
+                    "source": "sdk",
+                },
+            )
+            mock_estimate.assert_called_once_with(
+                items=[{"bookUid": "bk_test_001", "quantity": 1}],
+            )
+
+    def test_order_estimate_returns_demo_summary_for_demo_book(self):
+        response = self.client.post(
+            "/api/order/estimate",
+            json={"book_uid": "demo_local_123", "scene_count": 3, "quantity": 1},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["book_uid"], "demo_local_123")
+        self.assertEqual(response.json()["production_page_count"], 24)
+        self.assertEqual(response.json()["product_price"], 45000)
+        self.assertEqual(response.json()["shipping_price"], 0)
+        self.assertEqual(response.json()["total_price"], 45000)
+        self.assertEqual(response.json()["source"], "demo")
+
 
 if __name__ == "__main__":
     unittest.main()

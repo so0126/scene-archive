@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import { apiFetch } from '../lib/api';
+import { clearOrderEstimate } from "../lib/orderEstimate";
 
 interface BookState {
   bookUid: string | null;
   isCreating: boolean;
-  initBook: () => Promise<void>;
+  initBook: () => Promise<string | null>;
   setBookUid: (uid: string) => void;
 }
 
@@ -20,6 +21,9 @@ export const useBookStore = create<BookState>((set) => ({
   initBook: async () => {
     sessionStorage.removeItem('current_book_uid'); // 책 ID 삭제
     sessionStorage.removeItem('photos');           // 👈 저장된 사진 데이터도 삭제!
+    sessionStorage.removeItem("orderData");
+    sessionStorage.removeItem("orderUid");
+    clearOrderEstimate();
     set({ bookUid: null, isCreating: true });      // 상태 초기화
     try {
       const response = await apiFetch('/api/book/init', { method: 'POST' });
@@ -28,8 +32,10 @@ export const useBookStore = create<BookState>((set) => ({
       // 상태 업데이트와 동시에 세션 스토리지에도 저장
       sessionStorage.setItem('current_book_uid', data.book_uid);
       set({ bookUid: data.book_uid });
+      return data.book_uid as string;
     } catch (error) {
       console.error("책 생성 에러:", error);
+      return null;
     } finally {
       set({ isCreating: false });
     }

@@ -2,6 +2,7 @@ import { useNavigate } from "react-router";
 import { Button } from "../components/ui/button";
 import { Sparkles, Upload, Wand2, Package, Loader2 , PlayCircle} from "lucide-react";
 import { apiFetch } from "../lib/api";
+import { clearOrderEstimate, requestOrderEstimate } from "../lib/orderEstimate";
 import { useBookStore } from "../store/useBookStore";
 import { useState } from "react";
 import type { PhotoData } from "../types/photo"
@@ -20,8 +21,16 @@ export function Home() {
     // 버튼 클릭 시 실행될 로직
     const handleStart = async () => {
       sessionStorage.clear();
-      await initBook(); // API 호출 및 UID 저장 대기
-      navigate('/upload'); // 완료 후 이동
+      clearOrderEstimate();
+      const nextBookUid = await initBook();
+      if (nextBookUid) {
+        try {
+          await requestOrderEstimate(nextBookUid, 0);
+        } catch (error) {
+          console.error("초기 견적 계산 에러:", error);
+        }
+        navigate('/upload');
+      }
     };
 
   const handleDemoStart = async () => {
@@ -44,10 +53,15 @@ export function Home() {
       sessionStorage.setItem("photos", JSON.stringify(preparedPhotos));
       
       // 주문 데이터도 미리 세팅
-      sessionStorage.setItem("orderData", JSON.stringify({
-        name: "박소영", phone: "010-1234-5678", 
+      sessionStorage.setItem("orderData", JSON.stringify(data.shipping ?? {
+        name: "박소영", phone: "010-1234-5678",
         postalCode: "04010", address: "서울특별시 마포구 연남동", detailAddress: "연남서가 2층"
       }));
+      try {
+        await requestOrderEstimate(data.book_uid, preparedPhotos.length);
+      } catch (error) {
+        console.error("데모 견적 계산 에러:", error);
+      }
       navigate("/upload"); 
     } catch (err) {
       alert("데모 데이터를 불러오는데 실패했습니다.");
