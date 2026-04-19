@@ -1,4 +1,5 @@
 name: Publish Backend Image
+# Trigger note: workflow-only change to validate backend GHCR build and EC2 deploy.
 
 on:
   push:
