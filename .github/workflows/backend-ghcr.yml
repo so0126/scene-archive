@@ -47,19 +47,40 @@ jobs:
   deploy-to-ec2:
     runs-on: ubuntu-latest
     needs: build-and-push
-    if: ${{ github.ref == 'refs/heads/main' && secrets.EC2_HOST != '' && secrets.EC2_USERNAME != '' && secrets.EC2_SSH_KEY != '' && secrets.EC2_APP_PATH != '' }}
+    if: ${{ github.ref == 'refs/heads/main' }}
+    env:
+      EC2_HOST: ${{ secrets.EC2_HOST }}
+      EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
+      EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+      EC2_APP_PATH: ${{ secrets.EC2_APP_PATH }}
+      EC2_PORT: ${{ secrets.EC2_PORT }}
     steps:
+      - name: Check EC2 deploy configuration
+        id: ec2-config
+        shell: bash
+        run: |
+          if [[ -n "$EC2_HOST" && -n "$EC2_USERNAME" && -n "$EC2_SSH_KEY" && -n "$EC2_APP_PATH" ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Deploy on EC2
+        if: ${{ steps.ec2-config.outputs.enabled == 'true' }}
         uses: appleboy/ssh-action@v1.2.2
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          port: ${{ secrets.EC2_PORT || '22' }}
+          host: ${{ env.EC2_HOST }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ env.EC2_SSH_KEY }}
+          port: ${{ env.EC2_PORT != '' && env.EC2_PORT || '22' }}
           script_stop: true
           script: |
-            cd "${{ secrets.EC2_APP_PATH }}"
+            cd "${{ env.EC2_APP_PATH }}"
             git pull --ff-only origin main
             cd deploy/ec2
             chmod +x deploy.sh
             ./deploy.sh
+
+      - name: Skip EC2 deploy
+        if: ${{ steps.ec2-config.outputs.enabled != 'true' }}
+        run: echo "EC2 deployment secrets are not fully configured. Skipping deploy."
