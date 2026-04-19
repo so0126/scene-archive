@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 from bookprintapi.exceptions import ApiError
 import os
+import uuid
 
 load_dotenv()
 
@@ -81,6 +82,10 @@ def normalize_phone(value: str) -> str:
     return "".join(char for char in value if char.isdigit())
 
 
+def is_demo_book_uid(book_uid: str) -> bool:
+    return book_uid.startswith("demo_local_")
+
+
 def create_book(title: str):
     return client.books.create(
         book_spec_uid="SQUAREBOOK_HC",
@@ -98,47 +103,22 @@ def root():
 def fetch_demo_scenes():
     from database import setup_demo_data, get_demo_scenes
 
-    try:
-        setup_demo_data()
-        # 1. SQLite에서 데이터 가져오기 (id, image, keywords)
-        raw_data = get_demo_scenes()
+    setup_demo_data()
+    raw_data = get_demo_scenes()
+    book_uid = f"demo_local_{uuid.uuid4().hex[:12]}"
 
-        # 2. 책 UID 생성 (조립을 위해 필수)
-        res = create_book("Demo")
-        book_uid = res["data"]["bookUid"]
-
-        # 3. SDK로 진짜 serverFileName 딱 하나만 뽑기
-        sample_path = "static/samples/demo_sample.jpg"
-        upload_res = client.photos.upload(book_uid, sample_path)
-        real_server_name = upload_res["data"]["fileName"]
-
-        # 4. 프론트로 보낼 때 serverFileName을 포함해서 쏴줍니다.
-        return {
-            "book_uid": book_uid,
-            "scenes": [
-                {
-                    "id": item["id"],
-                    "image": item["image"],
-                    "keywords": item["keywords"],
-                    "serverFileName": real_server_name,
-                    "processed": True
-                } for item in raw_data
-            ]
-        }
-    except ApiError as e:
-        print("❌ 데모 책 생성 실패")
-        print(f"상태코드: {e.status_code}")
-        print(f"에러메시지: {e.message}")
-        if e.details:
-            print(f"상세내용: {e.details}")
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "message": e.message or "데모 책 생성에 실패했습니다.",
-                "error_code": e.error_code or "BOOKPRINT_API_ERROR",
-                "details": e.details,
-            },
-        )
+    return {
+        "book_uid": book_uid,
+        "scenes": [
+            {
+                "id": item["id"],
+                "image": item["image"],
+                "keywords": item["keywords"],
+                "serverFileName": f"demo_file_{index + 1}",
+                "processed": True
+            } for index, item in enumerate(raw_data)
+        ]
+    }
 
 # 1. 책 프로젝트 생성 API
 @app.post("/api/book/init")
@@ -197,6 +177,10 @@ def save_scenes(data: FinalizeAllRequest):
     try:
         if not data.scenes:
             raise Exception("사진 데이터(scenes)가 비어있습니다!")
+
+        if is_demo_book_uid(data.book_uid):
+            print("✅ 로컬 데모 모드: 외부 API 호출 없이 조립 완료 처리")
+            return {"status": "success", "mode": "demo"}
 
         # 표지 생성
         print("표지 생성 시도 중...")
@@ -283,6 +267,21 @@ def save_scenes(data: FinalizeAllRequest):
 @app.post("/api/order/create")
 def create_order(req: OrderRequest):
     try:
+        if is_demo_book_uid(req.book_uid):
+            order_uid = f"demo_ord_{uuid.uuid4().hex[:10]}"
+            save_order(
+                order_uid=order_uid,
+                book_uid=req.book_uid,
+                recipient_name=req.name,
+                recipient_phone=req.phone,
+                postal_code=req.postal_code,
+                address1=req.address,
+                address2=req.detail_address or "",
+                scenes=[scene.model_dump() for scene in req.scenes],
+                status="demo_created",
+            )
+            return {"order_uid": order_uid}
+
         # ⭐ 드디어 여기서 '확정'! 주문 전 마지막 관문입니다.
         # 페이지 수가 부족하면 여기서 400 에러가 터지며 주문이 중단됩니다.
         client.books.finalize(req.book_uid)
