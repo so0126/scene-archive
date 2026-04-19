@@ -26,9 +26,14 @@ interface OrderLookupResult {
   scenes: OrderedPhoto[];
 }
 
+interface OrderLookupFormData {
+  orderUid: string;
+  phone: string;
+}
+
 export function OrderLookup() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<OrderLookupFormData>({
     orderUid: "",
     phone: "",
   });

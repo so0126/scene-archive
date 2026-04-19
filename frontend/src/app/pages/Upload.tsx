@@ -1,3 +1,4 @@
+import type React from "react";
 import { StepHeader } from "../components/common/StepHeader";
 import { SectionCard } from "../components/common/SectionCard";
 import { StatusBadge } from "../components/common/StatusBadge";
@@ -94,7 +95,13 @@ export function Upload() {
   } finally {
     setIsSubmitting(false);
   }
-};
+  };
+
+  const handleKeywordInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    handleKeywordChange(e.target.value);
+  };
 
   return (
     <div className="min-h-screen bg-[#f5f1ea]">
@@ -213,7 +220,7 @@ export function Upload() {
                       id="keywords"
                       placeholder="예: 언내추럴 1화, 미코토의 결심"
                       value={currentPhoto.keywords}
-                      onChange={(e) => handleKeywordChange(e.target.value)}
+                      onChange={handleKeywordInputChange}
                       className="text-base p-4 bg-white border-[#8b9a8e]"
                     />
                   )}

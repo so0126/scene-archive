@@ -1,3 +1,4 @@
+import type React from "react";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { SectionCard } from "../components/common/SectionCard";
@@ -72,6 +73,12 @@ export function Success() {
     loadContent();
   }, [searchParams]);
 
+  const handlePreviewImageError = (
+    e: React.SyntheticEvent<HTMLImageElement, Event>,
+  ) => {
+    e.currentTarget.src = "https://via.placeholder.com/400x300?text=No+Image";
+  };
+
   return (
     <div className="min-h-screen bg-[#f5f1ea] py-20 px-4">
       <div className="max-w-4xl mx-auto text-center">
@@ -116,10 +123,7 @@ export function Success() {
                       src={photo.image} 
                       alt="Scene" 
                       className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                      // 이미지 로드 실패 시 대체 이미지 처리
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "https://via.placeholder.com/400x300?text=No+Image";
-                      }}
+                      onError={handlePreviewImageError}
                     />
                   </div>
                   <p className="text-xs text-[#8b9a8e] mb-1">PAGE {index + 1}</p>
