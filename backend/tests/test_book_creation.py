@@ -37,7 +37,7 @@ class BooksClientTests(unittest.TestCase):
         books.create(
             book_spec_uid="SQUAREBOOK_HC",
             title="Scene Archive",
-            creation_type="TEST",
+            creation_type="EBOOK_SYNC",
             external_ref="PIPELINE-001",
         )
 
@@ -45,7 +45,7 @@ class BooksClientTests(unittest.TestCase):
             "/Books",
             payload={
                 "bookSpecUid": "SQUAREBOOK_HC",
-                "creationType": "TEST",
+                "creationType": "EBOOK_SYNC",
                 "title": "Scene Archive",
                 "externalRef": "PIPELINE-001",
             },
@@ -72,7 +72,7 @@ class CreateBookTests(unittest.TestCase):
         mock_create.assert_called_once_with(
             book_spec_uid="SQUAREBOOK_HC",
             title="Scene Archive",
-            creation_type="TEST",
+            creation_type="EBOOK_SYNC",
             external_ref="PIPELINE-001",
         )
 
