@@ -84,6 +84,12 @@ npm install
 npm run dev
 ```
 
+로컬에서 다른 기기(휴대폰 등)로 접속할 때는 프론트가 Vite 프록시를 통해 같은 PC의 백엔드(`127.0.0.1:8000`)로 연결됩니다. 기본값이 맞지 않으면 `frontend/.env.local`에 아래 값을 넣어 개발용 백엔드 주소를 바꿀 수 있습니다.
+
+```txt
+VITE_DEV_API_TARGET=http://127.0.0.1:8000
+```
+
 ---
 
 ## 📁 폴더 구조
@@ -169,7 +175,7 @@ GitHub Actions 기준 배포 구성을 추가했습니다.
 1. 저장소 `Settings > Pages`에서 `Build and deployment` 소스를 `GitHub Actions`로 설정합니다.
 2. 저장소 `Settings > Pages`에서 `Custom domain`을 `scene-archive.com`으로 설정합니다.
 3. 저장소 `Settings > Secrets and variables > Actions > Variables`에 `VITE_API_BASE_URL`을 추가합니다.
-4. `VITE_API_BASE_URL` 값은 `https://api.scene-archive.com`으로 설정합니다.
+4. `VITE_API_BASE_URL` 값은 `https://api.scene-archive.com`처럼 실제 백엔드 배포 주소로 설정합니다.
 5. 백엔드 실행 환경에는 `BOOKPRINT_API_KEY`, `BOOKPRINT_BASE_URL`, `FRONTEND_ORIGINS`, `SCENE_ARCHIVE_DB_PATH` 를 설정합니다.
 6. `FRONTEND_ORIGINS` 에 실제 Pages 주소와 커스텀 도메인을 포함합니다.
 
