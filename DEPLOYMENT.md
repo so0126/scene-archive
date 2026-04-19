@@ -5,7 +5,7 @@ Scene Archive의 배포 및 운영 관련 문서는 이 파일에서 관리합�
 ## 1. 배포 구조
 
 - 프론트엔드: `.github/workflows/frontend-pages.yml`로 `main` 브랜치 푸시 시 GitHub Pages 자동 배포
-- 백엔드: `.github/workflows/backend-ghcr.yml`로 Docker 이미지를 GHCR에 자동 푸시
+- 백엔드: `.github/workflows/backend-ghcr.yml`로 Docker 이미지를 GHCR에 자동 푸시한 뒤, 설정이 완료되어 있으면 EC2까지 자동 재배포
 - 서비스 도메인: `https://scene-archive.com`
 - API 도메인: `https://api.scene-archive.com`
 
@@ -46,6 +46,7 @@ SCENE_ARCHIVE_DB_PATH=scene_archive.db
 1. EC2에 Docker와 Docker Compose를 설치합니다.
 2. 보안 그룹에서 `8000` 포트를 열거나, 이후 Nginx를 붙일 경우 `80`/`443`만 엽니다.
 3. GitHub Actions로 GHCR 이미지가 한 번 이상 푸시되어 있어야 합니다.
+4. 자동 배포를 쓰려면 EC2 서버에서 저장소 루트로 이동했을 때 `git pull origin main`이 성공해야 합니다.
 
 Ubuntu EC2라면 아래 스크립트로 설치할 수 있습니다.
 
@@ -89,6 +90,37 @@ SCENE_ARCHIVE_DB_PATH=/data/scene_archive.db
 chmod +x deploy.sh
 ./deploy.sh
 ```
+
+### GitHub Actions 자동 배포
+
+아래 GitHub Secrets를 설정하면 `main` 브랜치에 백엔드 변경이 푸시될 때 다음 순서가 자동으로 실행됩니다.
+
+1. 백엔드 Docker 이미지 빌드 및 GHCR 푸시
+2. GitHub Actions가 EC2에 SSH 접속
+3. EC2에서 `git pull --ff-only origin main` 실행
+4. `deploy/ec2/deploy.sh` 실행
+
+필요한 GitHub Secrets:
+
+- `EC2_HOST`: EC2 퍼블릭 호스트 또는 IP
+- `EC2_PORT`: SSH 포트, 기본값은 `22`
+- `EC2_USERNAME`: SSH 사용자명
+- `EC2_SSH_KEY`: GitHub Actions에서 사용할 private key
+- `EC2_APP_PATH`: EC2에 클론된 저장소 루트 경로
+
+예시:
+
+```txt
+EC2_HOST=15.165.15.78
+EC2_PORT=22
+EC2_USERNAME=ubuntu
+EC2_APP_PATH=/home/ubuntu/scene-archive
+```
+
+참고:
+
+- 저장소가 private이면 EC2 서버에도 별도의 deploy key 또는 GitHub 인증 설정이 있어야 `git pull`이 성공합니다.
+- 위 Secrets가 비어 있으면 이미지 푸시까지만 실행되고 EC2 자동 배포 단계는 건너뜁니다.
 
 ### 확인 방법
 
