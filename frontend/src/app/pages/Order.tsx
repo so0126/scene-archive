@@ -16,31 +16,35 @@ import {
 import { useBookStore } from "../store/useBookStore";
 import type { PhotoData } from "../types/photo";
 
+interface OrderFormData {
+  name: string;
+  phone: string;
+  postalCode: string;
+  address: string;
+  detailAddress: string;
+}
+
+const emptyOrderFormData: OrderFormData = {
+  name: "",
+  phone: "",
+  postalCode: "",
+  address: "",
+  detailAddress: "",
+};
+
 export function Order() {
   const navigate = useNavigate();
   const { bookUid } = useBookStore();
-  const [formData, setFormData] = useState(() => {
+  const [formData, setFormData] = useState<OrderFormData>(() => {
     const saved = sessionStorage.getItem("orderData");
     if (saved) {
       try {
-        return JSON.parse(saved);
+        return JSON.parse(saved) as OrderFormData;
       } catch {
-        return {
-          name: "",
-          phone: "",
-          postalCode: "",
-          address: "",
-          detailAddress: "",
-        };
+        return emptyOrderFormData;
       }
     }
-    return {
-      name: "",
-      phone: "",
-      postalCode: "",
-      address: "",
-      detailAddress: "",
-    };
+    return emptyOrderFormData;
   });
   const [estimate, setEstimate] = useState<OrderEstimate | null>(() =>
     loadOrderEstimate(),
