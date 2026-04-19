@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiFetch } from "../lib/api";
 import { useBookStore } from "../store/useBookStore";
 import type { PhotoData } from "../types/photo";
@@ -15,6 +15,10 @@ export function usePhotoFlow() {
     return saved ? JSON.parse(saved) : [];
   });
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    sessionStorage.setItem("photos", JSON.stringify(photos));
+  }, [photos]);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !bookUid) return;
