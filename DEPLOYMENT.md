@@ -6,8 +6,8 @@ Scene Archive의 배포 및 운영 관련 문서는 이 파일에서 관리합�
 
 - 프론트엔드: `.github/workflows/frontend-pages.yml`로 `main` 브랜치 푸시 시 GitHub Pages 자동 배포
 - 백엔드: `.github/workflows/backend-ghcr.yml`로 Docker 이미지를 GHCR에 자동 푸시한 뒤, 설정이 완료되어 있으면 EC2까지 자동 재배포
-- 서비스 도메인: `https://scene-archive.com`
-- API 도메인: `https://api.scene-archive.com`
+- 서비스 도메인: 운영 프론트엔드 도메인
+- API 도메인: 운영 백엔드 API 도메인
 
 ---
 
@@ -16,15 +16,15 @@ Scene Archive의 배포 및 운영 관련 문서는 이 파일에서 관리합�
 1. 저장소 `Settings > Pages`에서 `Build and deployment` 소스를 `GitHub Actions`로 설정합니다.
 2. 저장소 `Settings > Pages`에서 `Custom domain`을 `scene-archive.com`으로 설정합니다.
 3. 저장소 `Settings > Secrets and variables > Actions > Variables`에 `VITE_API_BASE_URL`을 추가합니다.
-4. `VITE_API_BASE_URL` 값은 `https://api.scene-archive.com`처럼 실제 백엔드 배포 주소로 설정합니다.
+4. `VITE_API_BASE_URL` 값은 실제 백엔드 배포 주소로 설정합니다.
 5. 백엔드 실행 환경에는 `BOOKPRINT_API_KEY`, `BOOKPRINT_BASE_URL`, `FRONTEND_ORIGINS`, `SCENE_ARCHIVE_DB_PATH`를 설정합니다.
 6. `FRONTEND_ORIGINS`에 실제 Pages 주소와 커스텀 도메인을 포함합니다.
 
 예시:
 
 ```txt
-VITE_API_BASE_URL=https://api.scene-archive.com
-FRONTEND_ORIGINS=http://localhost:5173,https://so0126.github.io,https://scene-archive.com,https://www.scene-archive.com
+VITE_API_BASE_URL=https://api.example.com
+FRONTEND_ORIGINS=http://localhost:5173,https://example.github.io,https://example.com,https://www.example.com
 SCENE_ARCHIVE_DB_PATH=scene_archive.db
 ```
 
@@ -80,7 +80,7 @@ GHCR_TOKEN=<github-personal-access-token>
 APP_PORT=8000
 BOOKPRINT_API_KEY=<your-api-key>
 BOOKPRINT_BASE_URL=https://api-sandbox.sweetbook.com/v1
-FRONTEND_ORIGINS=https://<github-username>.github.io
+FRONTEND_ORIGINS=https://<frontend-domain>
 SCENE_ARCHIVE_DB_PATH=/data/scene_archive.db
 ```
 
@@ -111,10 +111,10 @@ chmod +x deploy.sh
 예시:
 
 ```txt
-EC2_HOST=15.165.15.78
+EC2_HOST=<ec2-public-host-or-ip>
 EC2_PORT=22
-EC2_USERNAME=ubuntu
-EC2_APP_PATH=/home/ubuntu/scene-archive
+EC2_USERNAME=<ssh-user>
+EC2_APP_PATH=/home/<ssh-user>/scene-archive
 ```
 
 참고:
@@ -141,7 +141,7 @@ curl http://127.0.0.1:8000/
 
 ## 4. Cloudflare 및 HTTPS 연결
 
-현재 도메인은 `scene-archive.com`, 백엔드 도메인은 `api.scene-archive.com` 기준으로 설정합니다.
+현재 도메인과 API 도메인은 실제 운영 환경에 맞게 설정합니다.
 
 ### Cloudflare DNS
 
@@ -150,7 +150,7 @@ Cloudflare `DNS > Records`에서 아래 레코드를 추가합니다.
 ```txt
 Type: A
 Name: api
-Content: 15.165.15.78
+Content: <ec2-public-ip>
 TTL: Auto
 Proxy status: DNS only
 ```
@@ -158,7 +158,7 @@ Proxy status: DNS only
 ```txt
 Type: CNAME
 Name: @
-Content: so0126.github.io
+Content: <github-pages-hostname>
 TTL: Auto
 Proxy status: DNS only
 ```
@@ -166,14 +166,14 @@ Proxy status: DNS only
 ```txt
 Type: CNAME
 Name: www
-Content: scene-archive.com
+Content: <root-domain>
 TTL: Auto
 Proxy status: DNS only
 ```
 
 ### GitHub Pages
 
-- `Settings > Pages > Custom domain`에 `scene-archive.com`을 입력합니다.
+- `Settings > Pages > Custom domain`에 실제 서비스 도메인을 입력합니다.
 - `Enforce HTTPS`가 활성화되면 체크합니다.
 - 프론트 빌드 결과에 `CNAME` 파일이 포함되도록 `frontend/public/CNAME`을 추가했습니다.
 
@@ -188,7 +188,7 @@ sudo nano /etc/nginx/sites-available/scene-archive
 ```nginx
 server {
     listen 80;
-    server_name api.scene-archive.com;
+    server_name <api-domain>;
 
     client_max_body_size 50M;
 
@@ -213,7 +213,7 @@ sudo systemctl restart nginx
 
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d api.scene-archive.com
+sudo certbot --nginx -d <api-domain>
 ```
 
 ### EC2 백엔드 환경변수
@@ -221,5 +221,5 @@ sudo certbot --nginx -d api.scene-archive.com
 `deploy/ec2/.env`의 `FRONTEND_ORIGINS`는 아래처럼 설정합니다.
 
 ```txt
-FRONTEND_ORIGINS=https://scene-archive.com,https://www.scene-archive.com,https://so0126.github.io
+FRONTEND_ORIGINS=https://example.com,https://www.example.com,https://example.github.io
 ```
