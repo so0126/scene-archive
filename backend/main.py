@@ -86,6 +86,50 @@ def is_demo_book_uid(book_uid: str) -> bool:
     return book_uid.startswith("demo_local_")
 
 
+def unwrap_api_data(payload: dict) -> dict:
+    data = payload.get("data")
+    return data if isinstance(data, dict) else payload
+
+
+def extract_order_phone(order_payload: dict) -> str:
+    order = unwrap_api_data(order_payload)
+    shipping = order.get("shipping") or {}
+    candidates = [
+        order.get("recipientPhone"),
+        order.get("recipient_phone"),
+        shipping.get("recipientPhone"),
+        shipping.get("recipient_phone"),
+    ]
+    return next((value for value in candidates if isinstance(value, str) and value.strip()), "")
+
+
+def normalize_order_response(order_payload: dict) -> dict:
+    order = unwrap_api_data(order_payload)
+    shipping = order.get("shipping") or {}
+    items = order.get("items") or []
+    return {
+        "order_uid": order.get("orderUid") or order.get("order_uid"),
+        "book_uid": order.get("bookUid") or order.get("book_uid"),
+        "recipient_name": order.get("recipientName")
+        or order.get("recipient_name")
+        or shipping.get("recipientName")
+        or shipping.get("recipient_name")
+        or "",
+        "recipient_phone": extract_order_phone(order_payload),
+        "postal_code": order.get("postalCode")
+        or order.get("postal_code")
+        or shipping.get("postalCode")
+        or shipping.get("postal_code")
+        or "",
+        "address1": order.get("address1") or shipping.get("address1") or "",
+        "address2": order.get("address2") or shipping.get("address2") or "",
+        "status": order.get("status") or order.get("orderStatus") or "created",
+        "photo_count": len(items),
+        "scenes": [],
+        "created_at": order.get("createdAt") or order.get("created_at") or "",
+    }
+
+
 def create_book(title: str):
     return client.books.create(
         book_spec_uid="SQUAREBOOK_HC",
@@ -332,10 +376,27 @@ def fetch_order(order_uid: str):
 @app.post("/api/order/lookup")
 def lookup_order(req: OrderLookupRequest):
     order = get_order(req.order_uid)
-    if not order:
-        raise HTTPException(status_code=404, detail="주문 정보를 찾을 수 없습니다.")
+    if order:
+        if normalize_phone(order["recipient_phone"]) != normalize_phone(req.phone):
+            raise HTTPException(status_code=403, detail="주문번호 또는 연락처가 올바르지 않습니다.")
+        return order
 
-    if normalize_phone(order["recipient_phone"]) != normalize_phone(req.phone):
+    try:
+        remote_order = client.orders.get(req.order_uid)
+    except ApiError as e:
+        if e.status_code == 404:
+            raise HTTPException(status_code=404, detail="주문 정보를 찾을 수 없습니다.")
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": e.message or "주문 조회에 실패했습니다.",
+                "error_code": e.error_code or "BOOKPRINT_API_ERROR",
+                "details": e.details,
+            },
+        )
+
+    remote_phone = extract_order_phone(remote_order)
+    if normalize_phone(remote_phone) != normalize_phone(req.phone):
         raise HTTPException(status_code=403, detail="주문번호 또는 연락처가 올바르지 않습니다.")
 
-    return order
+    return normalize_order_response(remote_order)
